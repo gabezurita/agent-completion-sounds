@@ -56,8 +56,10 @@ once with a favorites/all toggle for curating subsets of a larger pool.
      `~/.gemini/settings.json`. The `AfterAgent` event fires once after each completed
      turn.
    - Codex CLI: add `hooks/codex-cli-config.toml.snippet` to the user-level
-     `~/.codex/config.toml`. Keep `notify` at user level; project config cannot override
-     notification settings.
+     `~/.codex/config.toml`. Insert the `notify` line before the first TOML table header
+     (any line beginning with `[`), so it remains a top-level setting rather than becoming
+     part of a `[projects."..."]`, `[mcp_servers....]`, or other table. Keep `notify` in
+     the user-level config; project config cannot override notification settings.
 5. Make the scripts executable if they are not already: `chmod +x scripts/*.sh`.
 
 ## Supported agent surfaces
