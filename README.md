@@ -4,11 +4,23 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow.svg)](https://buymeacoffee.com/gabezurita)
 
 Play a random audio clip when a coding-agent turn ends, shared across Cursor, Claude
-Code, Gemini CLI, and Codex CLI from one script and one sound pool. Includes a
-favorites/all toggle so you can narrow playback to a curated subset of your own clips.
+Code, Gemini CLI, and Codex CLI from one script and one sound pool. Includes three
+locally generated CC0 starter sounds and a favorites/all toggle.
 
-This repo ships no audio. Bring your own short clips (voice lines, chimes, whatever) and
-point the tool at them.
+## Quick start
+
+Clone the repository somewhere permanent, then run:
+
+```bash
+./scripts/setup.sh
+```
+
+The setup script generates three original CC0 WAV chimes, safely merges all four
+supported hook configurations, and plays a test sound. Existing configuration files
+are preserved and backed up before a change. Restart any open agent sessions afterward.
+
+See [GETTING_STARTED.md](GETTING_STARTED.md) for requirements, exactly what changes,
+verification, customization, and uninstall instructions.
 
 ## What this is
 
@@ -28,7 +40,7 @@ Several projects already play a sound on agent completion for one tool or the ot
 (see Prior art below). None combine one script wired into both tools' hook systems at
 once with a favorites/all toggle for curating subsets of a larger pool.
 
-## Setup
+## Manual setup
 
 1. Clone this repo somewhere permanent, e.g. `~/code/agent-completion-sounds`.
 2. Create a sounds root and drop audio files into subfolders:
@@ -89,6 +101,15 @@ scrape extension UI state or depend on private APIs. See the upstream contracts 
 - `AGENT_COMPLETION_SOUND_VOLUME=0.3` - volume for `afplay` (`0.0`-`1.0`, default `0.45`).
   Not used on the `paplay`/`aplay` fallback paths.
 
+## Additional sounds
+
+This repository does not include third-party audio files. Find reusable notification
+sounds on [Freesound](https://freesound.org/), preferably under CC0, or use sounds you
+created or otherwise have permission to use. Check each file's license and provide
+attribution when required. Avoid redistributing copyrighted game audio. See
+[Freesound's licensing guide](https://freesound.org/help/faq/#licenses) before using a
+download.
+
 ## Favorites and mode
 
 `favorites.txt` at the root of your sounds directory lists folder names, one per line;
@@ -116,8 +137,8 @@ alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: shellcheck clean, no bundled
-audio.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: shellcheck clean and no
+third-party audio committed to the repository.
 
 ## License
 
