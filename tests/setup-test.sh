@@ -67,7 +67,10 @@ config_hashes() {
 first_hashes=$(config_hashes)
 run_setup
 second_hashes=$(config_hashes)
-[[ "${first_hashes}" == "${second_hashes}" ]]
+if [[ "${first_hashes}" != "${second_hashes}" ]]; then
+  printf '%s\n' 'Error: idempotent run altered config hashes!' >&2
+  exit 1
+fi
 [[ -L "${TEST_HOME}/.cursor/hooks.json" ]]
 
 cmp "${TEST_ROOT}/original-cursor.json" "${TEST_HOME}/.cursor/hooks.json.bak"
