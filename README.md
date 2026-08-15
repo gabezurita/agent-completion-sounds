@@ -1,6 +1,7 @@
 # agent-completion-sounds
 
 [![CI](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml/badge.svg)](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow.svg)](https://buymeacoffee.com/gabezurita)
 
 Play a random audio clip when a coding-agent turn ends, shared across Cursor and Claude
 Code CLI from one script and one sound pool. Includes a favorites/all toggle so you can
