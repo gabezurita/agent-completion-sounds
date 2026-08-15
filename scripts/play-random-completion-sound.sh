@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Play a random clip from AGENT_SOUNDS_ROOT when an agent turn ends.
-# Wire this as a Cursor stop hook and/or a Claude Code Stop hook (see hooks/).
+# Wire this as a Cursor, Claude Code, Gemini CLI, or Google Antigravity hook (see hooks/).
 
 set -euo pipefail
 

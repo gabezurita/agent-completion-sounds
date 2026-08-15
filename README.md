@@ -4,8 +4,8 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow.svg)](https://buymeacoffee.com/gabezurita)
 
 Play a random audio clip when a coding-agent turn ends, shared across Cursor, Claude
-Code, Gemini CLI, and Codex CLI from one script and one sound pool. Includes three
-locally generated CC0 starter sounds and a favorites/all toggle.
+Code, Gemini CLI, Codex CLI, and Google Antigravity from one script and one sound
+pool. Includes three locally generated CC0 starter sounds and a favorites/all toggle.
 
 ## Quick start
 
@@ -15,7 +15,7 @@ Clone the repository somewhere permanent, then run:
 ./scripts/setup.sh
 ```
 
-The setup script generates three original CC0 WAV chimes, safely merges all four
+The setup script generates three original CC0 WAV chimes, safely merges all five
 supported hook configurations, and plays a test sound. Existing configuration files
 are preserved and backed up before a change. Restart any open agent sessions afterward.
 
@@ -25,8 +25,9 @@ verification, customization, and uninstall instructions.
 ## What this is
 
 - `scripts/play-random-completion-sound.sh` - picks and plays one random clip from your
-  sounds root. Works directly with Cursor `stop`, Claude Code `Stop`, and Gemini CLI
-  `AfterAgent` hooks, which run a shell command with JSON on stdin.
+  sounds root. Works directly with Cursor `stop`, Claude Code `Stop`, Gemini CLI
+  `AfterAgent`, and Google Antigravity `Stop` hooks, which run a shell command with
+  JSON on stdin.
 - `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
   shared player's stdin contract.
 - `scripts/sound-mode.sh` - toggles between two modes:
@@ -67,6 +68,9 @@ once with a favorites/all toggle for curating subsets of a larger pool.
    - Gemini CLI: merge `hooks/gemini-cli-hooks.json.snippet` into
      `~/.gemini/settings.json`. The `AfterAgent` event fires once after each completed
      turn.
+   - Google Antigravity: merge `hooks/antigravity-hooks.json.snippet` into
+     `~/.gemini/config/hooks.json` (or `.agents/hooks.json` in your workspace). The
+     `Stop` lifecycle hook fires when the execution loop terminates.
    - Codex CLI: add `hooks/codex-cli-config.toml.snippet` to the user-level
      `~/.codex/config.toml`. Insert the `notify` line before the first TOML table header
      (any line beginning with `[`), so it remains a top-level setting rather than becoming
@@ -82,6 +86,7 @@ once with a favorites/all toggle for curating subsets of a larger pool.
 | Claude Code CLI | Supported | `Stop` hook |
 | Claude Code VS Code extension | Supported | Shares the CLI's `~/.claude/settings.json` hooks |
 | Gemini CLI | Supported | `AfterAgent` hook |
+| Google Antigravity | Supported | `Stop` lifecycle hook in `~/.gemini/config/hooks.json` |
 | Codex CLI | Supported | User-level `notify` command via adapter |
 | GitHub Copilot in VS Code | Not currently supported | No documented user-scriptable completion hook |
 | Codex VS Code extension | Not currently supported | No documented user-scriptable completion hook |

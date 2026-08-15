@@ -9,7 +9,7 @@ trap 'rm -rf "${TEST_ROOT}"' EXIT
 TEST_HOME="${TEST_ROOT}/home"
 TEST_BIN="${TEST_ROOT}/bin"
 PLAY_LOG="${TEST_ROOT}/played.log"
-mkdir -p "${TEST_HOME}/.cursor" "${TEST_HOME}/.claude" "${TEST_HOME}/.gemini" \
+mkdir -p "${TEST_HOME}/.cursor" "${TEST_HOME}/.claude" "${TEST_HOME}/.gemini/config" \
   "${TEST_HOME}/.codex" "${TEST_HOME}/sounds" "${TEST_BIN}"
 
 cat > "${TEST_ROOT}/cursor-hooks-target.json" <<'JSON'
@@ -21,6 +21,9 @@ cat > "${TEST_HOME}/.claude/settings.json" <<'JSON'
 JSON
 cat > "${TEST_HOME}/.gemini/settings.json" <<'JSON'
 {"preserved":"gemini","hooks":{"AfterAgent":[{"matcher":"existing","hooks":[{"type":"command","command":"/existing/gemini"}]}],"BeforeAgent":[]}}
+JSON
+cat > "${TEST_HOME}/.gemini/config/hooks.json" <<'JSON'
+{"preserved":"antigravity","existing-hook":{"Stop":[{"type":"command","command":"/existing/antigravity"}]}}
 JSON
 cat > "${TEST_HOME}/.codex/config.toml" <<'TOML'
 notify = [
@@ -36,6 +39,7 @@ printf '%s\n' 'existing-folder' > "${TEST_HOME}/sounds/favorites.txt"
 cp "${TEST_HOME}/.cursor/hooks.json" "${TEST_ROOT}/original-cursor.json"
 cp "${TEST_HOME}/.claude/settings.json" "${TEST_ROOT}/original-claude.json"
 cp "${TEST_HOME}/.gemini/settings.json" "${TEST_ROOT}/original-gemini.json"
+cp "${TEST_HOME}/.gemini/config/hooks.json" "${TEST_ROOT}/original-antigravity.json"
 cp "${TEST_HOME}/.codex/config.toml" "${TEST_ROOT}/original-codex.toml"
 
 cat > "${TEST_BIN}/afplay" <<'SH'
@@ -60,6 +64,7 @@ config_hashes() {
     "${TEST_HOME}/.cursor/hooks.json" \
     "${TEST_HOME}/.claude/settings.json" \
     "${TEST_HOME}/.gemini/settings.json" \
+    "${TEST_HOME}/.gemini/config/hooks.json" \
     "${TEST_HOME}/.codex/config.toml" \
     "${TEST_HOME}/sounds/favorites.txt"
 }
@@ -76,6 +81,7 @@ fi
 cmp "${TEST_ROOT}/original-cursor.json" "${TEST_HOME}/.cursor/hooks.json.bak"
 cmp "${TEST_ROOT}/original-claude.json" "${TEST_HOME}/.claude/settings.json.bak"
 cmp "${TEST_ROOT}/original-gemini.json" "${TEST_HOME}/.gemini/settings.json.bak"
+cmp "${TEST_ROOT}/original-antigravity.json" "${TEST_HOME}/.gemini/config/hooks.json.bak"
 cmp "${TEST_ROOT}/original-codex.toml" "${TEST_HOME}/.codex/config.toml.bak"
 
 python3 - "${TEST_HOME}" "${REPO_ROOT}" <<'PY'
@@ -109,6 +115,16 @@ commands = [hook["command"] for group in gemini["hooks"]["AfterAgent"] for hook 
 assert commands.count(player) == 1
 assert "/existing/gemini" in commands
 assert gemini["hooks"]["BeforeAgent"] == []
+
+antigravity = json.loads((home / ".gemini/config/hooks.json").read_text())
+assert antigravity["preserved"] == "antigravity"
+commands = [
+    entry["command"]
+    for spec in antigravity.values() if isinstance(spec, dict)
+    for entry in spec.get("Stop", []) if isinstance(entry, dict)
+]
+assert commands.count(player) == 1
+assert "/existing/antigravity" in commands
 
 codex_text = (home / ".codex/config.toml").read_text()
 preamble = "\n".join(
@@ -165,6 +181,7 @@ HOME="${FRESH_HOME}" PATH="${TEST_BIN}:${PATH}" PLAY_LOG="${PLAY_LOG}" \
 [[ -f "${FRESH_HOME}/.cursor/hooks.json" ]]
 [[ -f "${FRESH_HOME}/.claude/settings.json" ]]
 [[ -f "${FRESH_HOME}/.gemini/settings.json" ]]
+[[ -f "${FRESH_HOME}/.gemini/config/hooks.json" ]]
 [[ -f "${FRESH_HOME}/.codex/config.toml" ]]
 [[ -f "${FRESH_HOME}/sounds/agent-completion-starter/complete-bright.wav" ]]
 [[ ! -e "${FRESH_HOME}/sounds/favorites.txt" ]]

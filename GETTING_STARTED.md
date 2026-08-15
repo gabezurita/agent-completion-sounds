@@ -1,8 +1,8 @@
 # Getting started
 
-The one-command setup gives Cursor, Claude Code, Gemini CLI, and Codex CLI one shared
-completion-sound pool. It generates the starter sounds locally; it does not download
-audio or require an account with a sound library.
+The one-command setup gives Cursor, Claude Code, Gemini CLI, Codex CLI, and Google
+Antigravity one shared completion-sound pool. It generates the starter sounds locally;
+it does not download audio or require an account with a sound library.
 
 ## Requirements
 
@@ -27,8 +27,8 @@ The command:
 1. Generates three short synthesized WAV chimes in
    `~/sounds/agent-completion-starter/`. They are original project output dedicated to
    the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
-2. Adds the shared player to Cursor's `stop`, Claude Code's `Stop`, and Gemini CLI's
-   `AfterAgent` hooks.
+2. Adds the shared player to Cursor's `stop`, Claude Code's `Stop`, Gemini CLI's
+   `AfterAgent`, and Google Antigravity's `Stop` hooks.
 3. Sets Codex CLI's user-level `notify` command.
 4. Adds the starter folder to an existing `~/sounds/favorites.txt` and plays a test
    sound. If that file does not exist, it remains absent and the default full-pool
@@ -97,6 +97,7 @@ Remove the entries whose command points into this clone from:
 - `~/.cursor/hooks.json`
 - `~/.claude/settings.json`
 - `~/.gemini/settings.json`
+- `~/.gemini/config/hooks.json`
 - the top-level `notify` setting in `~/.codex/config.toml`
 
 You can then remove `~/sounds/agent-completion-starter` and its line from
