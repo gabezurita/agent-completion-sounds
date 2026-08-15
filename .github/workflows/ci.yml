@@ -34,7 +34,7 @@ jobs:
 
       - name: Validate TOML snippets
         run: |
-          python3 -c 'import pathlib, tomllib; [tomllib.loads(path.read_text()) for path in pathlib.Path("hooks").glob("*.toml.snippet")]'
+          python3 -c 'import pathlib, tomllib; files=list(pathlib.Path("hooks").glob("*.toml.snippet")); assert files; [tomllib.loads(path.read_text()) for path in files]'
 
       - name: Test adapters
         run: |

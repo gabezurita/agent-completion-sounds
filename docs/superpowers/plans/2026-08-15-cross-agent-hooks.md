@@ -61,7 +61,7 @@ Expected: `codex notify adapter: PASS` and exit 0.
 
 - [ ] **Step 1: Extend CI before adding examples**
 
-Set up Python 3.11, add checks that parse `hooks/*.toml.snippet` with `python3 -c 'import pathlib, tomllib; [tomllib.loads(path.read_text()) for path in pathlib.Path("hooks").glob("*.toml.snippet")]'`, execute every `tests/*.sh`, and include those test scripts in Bash syntax checking and executable-bit checks.
+Set up Python 3.11, add checks that require and parse `hooks/*.toml.snippet` with `tomllib`, execute every `tests/*.sh`, and include those test scripts in Bash syntax checking and executable-bit checks.
 
 - [ ] **Step 2: Verify CI-equivalent checks fail**
 
