@@ -11,14 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
-          scandir: './scripts'
+          scandir: '.'
 
       - name: Bash syntax check
         run: |
-          for f in scripts/*.sh; do
+          for f in scripts/*.sh tests/*.sh; do
             bash -n "$f"
           done
 
@@ -28,8 +32,18 @@ jobs:
             python3 -m json.tool "$f" > /dev/null
           done
 
-      - name: Check scripts are executable
+      - name: Validate TOML snippets
         run: |
-          for f in scripts/*.sh; do
+          python3 -c 'import pathlib, tomllib; files=list(pathlib.Path("hooks").glob("*.toml.snippet")); assert files; [tomllib.loads(path.read_text()) for path in files]'
+
+      - name: Test adapters
+        run: |
+          for f in tests/*.sh; do
+            bash "$f"
+          done
+
+      - name: Check shell files are executable
+        run: |
+          for f in scripts/*.sh tests/*.sh; do
             test -x "$f" || { echo "not executable: $f"; exit 1; }
           done
