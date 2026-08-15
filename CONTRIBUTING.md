@@ -16,7 +16,8 @@ CI runs all of the above on every push and PR.
 
 This repo is the hook-wiring and playback logic only. Do not add:
 
-- Bundled audio files (unlicensed or otherwise) — users bring their own clips.
+- Third-party audio files. The setup script may generate original starter tones locally,
+  but binary audio does not belong in the repository.
 - A new coding-agent integration without opening an issue first to confirm the
   hook/config shape that agent actually supports.
 
