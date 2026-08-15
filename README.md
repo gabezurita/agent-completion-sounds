@@ -1,5 +1,7 @@
 # agent-completion-sounds
 
+[![CI](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml/badge.svg)](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml)
+
 Play a random audio clip when a coding-agent turn ends, shared across Cursor and Claude
 Code CLI from one script and one sound pool. Includes a favorites/all toggle so you can
 narrow playback to a curated subset of your own clips.
@@ -78,6 +80,11 @@ alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh
 - Claude Code: [daveschumaker/homebrew-claude-sounds](https://github.com/daveschumaker/homebrew-claude-sounds), [dgilperez/claude-sounds](https://github.com/dgilperez/claude-sounds), [alwa97/claude-code-stop-sound](https://github.com/alwa97/claude-code-stop-sound), [etr/bells-and-whistles](https://github.com/etr/bells-and-whistles)
 - Cursor: [hamzafer/cursor-hooks](https://github.com/hamzafer/cursor-hooks), [bcharleson/sound-mcp](https://github.com/bcharleson/sound-mcp), [hgbdev/cursor-agent-notifier](https://github.com/hgbdev/cursor-agent-notifier)
 - Curated list: [varun86/awesome-claude-code-sounds](https://github.com/varun86/awesome-claude-code-sounds)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: shellcheck clean, no bundled
+audio.
 
 ## License
 

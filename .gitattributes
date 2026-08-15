@@ -1,0 +1,6 @@
+# Force LF endings for shell scripts regardless of the committer's platform.
+# The favorites.txt parser strips a trailing \r defensively, but the scripts
+# themselves must stay LF or a Windows checkout can break the shebang line.
+*.sh text eol=lf
+*.json* text eol=lf
+*.md text eol=lf
