@@ -5,9 +5,10 @@ Small tool, low ceremony. A few ground rules:
 ## Before opening a PR
 
 - `shellcheck scripts/*.sh` must pass clean.
-- `bash -n scripts/*.sh` must pass (syntax check).
+- `bash -n scripts/*.sh tests/*.sh` must pass (syntax check).
 - JSON files under `hooks/` must parse (`python3 -m json.tool <file>`).
-- Scripts must stay executable (`chmod +x`).
+- TOML snippets under `hooks/` must parse with Python 3.11's `tomllib`.
+- Shell files under `scripts/` and `tests/` must stay executable (`chmod +x`).
 
 CI runs all of the above on every push and PR.
 

@@ -3,9 +3,9 @@
 [![CI](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml/badge.svg)](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow.svg)](https://buymeacoffee.com/gabezurita)
 
-Play a random audio clip when a coding-agent turn ends, shared across Cursor and Claude
-Code CLI from one script and one sound pool. Includes a favorites/all toggle so you can
-narrow playback to a curated subset of your own clips.
+Play a random audio clip when a coding-agent turn ends, shared across Cursor, Claude
+Code, Gemini CLI, and Codex CLI from one script and one sound pool. Includes a
+favorites/all toggle so you can narrow playback to a curated subset of your own clips.
 
 This repo ships no audio. Bring your own short clips (voice lines, chimes, whatever) and
 point the tool at them.
@@ -13,8 +13,10 @@ point the tool at them.
 ## What this is
 
 - `scripts/play-random-completion-sound.sh` - picks and plays one random clip from your
-  sounds root. Works as a Cursor `stop` hook and a Claude Code `Stop` hook at the same
-  time, since both just run a shell command with JSON on stdin.
+  sounds root. Works directly with Cursor `stop`, Claude Code `Stop`, and Gemini CLI
+  `AfterAgent` hooks, which run a shell command with JSON on stdin.
+- `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
+  shared player's stdin contract.
 - `scripts/sound-mode.sh` - toggles between two modes:
   - `favorites` (default): only clips listed in `favorites.txt`
   - `all`: every clip under the sounds root
@@ -41,14 +43,42 @@ once with a favorites/all toggle for curating subsets of a larger pool.
 
 3. (Optional) Copy `sounds/favorites.txt.example` to `<sounds-root>/favorites.txt` and
    list the subfolder names you want in the favorites rotation.
-4. Wire the hook:
+4. Wire one or more hooks, replacing each placeholder with the absolute path to this
+   clone:
+
    - Cursor: copy `hooks/cursor-hooks.json.example` to `~/.cursor/hooks.json`
-     (merge if you already have one), and replace the placeholder path with the
-     absolute path to `scripts/play-random-completion-sound.sh` in your clone.
+     (merge if you already have one).
    - Claude Code: merge the contents of `hooks/claude-code-stop-hook.json.snippet`
-     into the `hooks` object in `~/.claude/settings.json` (create the file if it
-     does not exist), same path substitution.
+     into `~/.claude/settings.json` (create the file if it does not exist). The Claude
+     Code VS Code extension shares this settings file, so this also enables sounds in
+     its graphical panel.
+   - Gemini CLI: merge `hooks/gemini-cli-hooks.json.snippet` into
+     `~/.gemini/settings.json`. The `AfterAgent` event fires once after each completed
+     turn.
+   - Codex CLI: add `hooks/codex-cli-config.toml.snippet` to the user-level
+     `~/.codex/config.toml`. Keep `notify` at user level; project config cannot override
+     notification settings.
 5. Make the scripts executable if they are not already: `chmod +x scripts/*.sh`.
+
+## Supported agent surfaces
+
+| Surface | Status | Wiring |
+| --- | --- | --- |
+| Cursor | Supported | `stop` hook |
+| Claude Code CLI | Supported | `Stop` hook |
+| Claude Code VS Code extension | Supported | Shares the CLI's `~/.claude/settings.json` hooks |
+| Gemini CLI | Supported | `AfterAgent` hook |
+| Codex CLI | Supported | User-level `notify` command via adapter |
+| GitHub Copilot in VS Code | Not currently supported | No documented user-scriptable completion hook |
+| Codex VS Code extension | Not currently supported | No documented user-scriptable completion hook |
+
+The unsupported VS Code rows are deliberate: VS Code does not expose a generic public
+event for observing another extension's completed agent turn. This project will not
+scrape extension UI state or depend on private APIs. See the upstream contracts in the
+[Gemini hooks reference](https://geminicli.com/docs/hooks/reference/),
+[Codex configuration reference](https://developers.openai.com/codex/config-reference/),
+[Claude Code VS Code guide](https://code.claude.com/docs/en/ide-integrations), and
+[VS Code API reference](https://code.visualstudio.com/api/references/vscode-api).
 
 ## Configuration
 
