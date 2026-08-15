@@ -121,6 +121,19 @@ gemini = merge_nested_hook(
     player,
 )
 
+antigravity_template = json_template("antigravity-hooks.json.snippet")
+antigravity_path = home / ".gemini" / "config" / "hooks.json"
+antigravity = load_json(antigravity_path)
+found = any(
+    entry.get("command") == player
+    for spec in antigravity.values() if isinstance(spec, dict)
+    for entry in spec.get("Stop", []) if isinstance(entry, dict)
+)
+if not found:
+    hook_entry = antigravity.setdefault("completion-sound", {})
+    stop_list = hook_entry.setdefault("Stop", [])
+    stop_list.extend(antigravity_template["completion-sound"]["Stop"])
+
 codex_path = home / ".codex" / "config.toml"
 codex_text = codex_path.read_text() if codex_path.exists() else ""
 codex_template = (repo / "hooks" / "codex-cli-config.toml.snippet").read_text()
@@ -175,6 +188,7 @@ if tables:
 write_json(cursor_path, cursor)
 write_json(claude_path, claude)
 write_json(gemini_path, gemini)
+write_json(antigravity_path, antigravity)
 atomic_write(codex_path, codex_text)
 
 starter = sounds_root / "agent-completion-starter"
@@ -237,5 +251,5 @@ PY
 printf '%s\n' '{}' | "${PLAYER}" >/dev/null
 
 printf 'Installed three CC0 starter sounds in %s\n' "${SOUNDS_ROOT}/agent-completion-starter"
-printf '%s\n' 'Configured Cursor, Claude Code, Gemini CLI, and Codex CLI.'
+printf '%s\n' 'Configured Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigravity.'
 printf '%s\n' 'Played a completion sound. Restart open agent sessions to load the new hooks.'
