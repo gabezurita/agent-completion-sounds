@@ -1,0 +1,6 @@
+# Favorite clip folders (relative to your sounds root), one per line.
+# When this file exists at <sounds-root>/favorites.txt and has at least
+# one entry, the hook cycles only through these folders instead of the
+# full sounds root. Blank lines and lines starting with # are ignored.
+my-favorite-clips
+another-folder

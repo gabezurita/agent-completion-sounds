@@ -1,0 +1,6 @@
+# Runtime state, not source
+.mode
+favorites.txt
+
+# OS cruft
+.DS_Store

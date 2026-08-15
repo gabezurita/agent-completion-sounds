@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": "/absolute/path/to/agent-completion-sounds/scripts/play-random-completion-sound.sh"
+      }
+    ]
+  }
+}
