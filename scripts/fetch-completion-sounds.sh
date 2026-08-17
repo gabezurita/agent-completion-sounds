@@ -167,6 +167,7 @@ for i in "${!folders[@]}"; do
   wanted "$folder" || continue
 
   dest_dir="${SOUNDS_ROOT}/${folder}"
+  dest="${dest_dir}/${name}"
   wav_name="${name%.*}.wav"
   if [[ -f "$dest" || -f "${dest_dir}/${wav_name}" ]]; then
     skipped=$((skipped + 1))
