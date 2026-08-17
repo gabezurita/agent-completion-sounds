@@ -92,8 +92,14 @@ import wave
 
 home = pathlib.Path(sys.argv[1])
 repo = pathlib.Path(sys.argv[2])
-player = str(repo / "scripts" / "play-random-completion-sound.sh")
-notifier = str(repo / "scripts" / "codex-notify.sh")
+player = str(home / ".local/bin/play-random-completion-sound.sh")
+notifier = str(home / ".local/bin/codex-notify.sh")
+
+assert (home / ".local/bin/play-random-completion-sound.sh").is_symlink()
+assert (home / ".local/bin/play-random-completion-sound").is_symlink()
+assert (home / ".local/bin/sound-mode.sh").is_symlink()
+assert (home / ".local/bin/soundmode").is_symlink()
+assert (home / ".local/bin/codex-notify.sh").is_symlink()
 
 cursor = json.loads((home / ".cursor/hooks.json").read_text())
 assert cursor["preserved"] == "cursor"
@@ -157,7 +163,7 @@ for candidate in python3.11 python3; do
   fi
 done
 [[ -n "${TOML_PY}" ]]
-"${TOML_PY}" - "${TEST_HOME}/.codex/config.toml" "${REPO_ROOT}/scripts/codex-notify.sh" <<'PY'
+"${TOML_PY}" - "${TEST_HOME}/.codex/config.toml" "${TEST_HOME}/.local/bin/codex-notify.sh" <<'PY'
 import pathlib
 import sys
 import tomllib

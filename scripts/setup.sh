@@ -34,9 +34,35 @@ import wave
 
 home = Path(sys.argv[1]).expanduser()
 sounds_root = Path(sys.argv[2]).expanduser()
-player = str(Path(sys.argv[3]).resolve())
-notifier = str(Path(sys.argv[4]).resolve())
+raw_player = Path(sys.argv[3]).resolve()
+raw_notifier = Path(sys.argv[4]).resolve()
 repo = Path(sys.argv[5])
+
+bin_dir = home / ".local" / "bin"
+bin_dir.mkdir(parents=True, exist_ok=True)
+
+
+def link_binary(link_path, target_path):
+    link_path.parent.mkdir(parents=True, exist_ok=True)
+    if link_path.is_symlink() or link_path.exists():
+        link_path.unlink()
+    link_path.symlink_to(target_path)
+
+
+bin_player = bin_dir / "play-random-completion-sound.sh"
+bin_player_short = bin_dir / "play-random-completion-sound"
+bin_soundmode = bin_dir / "sound-mode.sh"
+bin_soundmode_short = bin_dir / "soundmode"
+bin_notifier = bin_dir / "codex-notify.sh"
+
+link_binary(bin_player, raw_player)
+link_binary(bin_player_short, raw_player)
+link_binary(bin_soundmode, (repo / "scripts" / "sound-mode.sh").resolve())
+link_binary(bin_soundmode_short, (repo / "scripts" / "sound-mode.sh").resolve())
+link_binary(bin_notifier, raw_notifier)
+
+player = str(bin_player)
+notifier = str(bin_notifier)
 
 
 def atomic_write(path, text):
@@ -81,16 +107,28 @@ def json_template(filename):
     return json.loads(text)
 
 
+def is_sound_hook(command):
+    if not isinstance(command, str):
+        return False
+    return (
+        command == player
+        or command.endswith("/play-random-completion-sound.sh")
+        or command.endswith("/play-random-completion-sound")
+    )
+
+
 def merge_nested_hook(path, event, group, command):
     data = load_json(path)
     hooks = data.setdefault("hooks", {})
     groups = hooks.setdefault(event, [])
-    found = any(
-        hook.get("command") == command
-        for item in groups if isinstance(item, dict)
-        for hook in item.get("hooks", []) if isinstance(hook, dict)
-    )
-    if not found:
+    updated = False
+    for item in groups:
+        if isinstance(item, dict):
+            for hook in item.get("hooks", []):
+                if isinstance(hook, dict) and is_sound_hook(hook.get("command")):
+                    hook["command"] = command
+                    updated = True
+    if not updated:
         groups.append(group)
     return data
 
@@ -101,7 +139,12 @@ cursor = load_json(cursor_path)
 cursor.setdefault("version", cursor_template["version"])
 hooks = cursor.setdefault("hooks", {})
 entries = hooks.setdefault("stop", [])
-if not any(item.get("command") == player for item in entries if isinstance(item, dict)):
+updated_cursor = False
+for item in entries:
+    if isinstance(item, dict) and is_sound_hook(item.get("command")):
+        item["command"] = player
+        updated_cursor = True
+if not updated_cursor:
     entries.extend(cursor_template["hooks"]["stop"])
 
 claude_template = json_template("claude-code-stop-hook.json.snippet")
@@ -124,12 +167,14 @@ gemini = merge_nested_hook(
 antigravity_template = json_template("antigravity-hooks.json.snippet")
 antigravity_path = home / ".gemini" / "config" / "hooks.json"
 antigravity = load_json(antigravity_path)
-found = any(
-    entry.get("command") == player
-    for spec in antigravity.values() if isinstance(spec, dict)
-    for entry in spec.get("Stop", []) if isinstance(entry, dict)
-)
-if not found:
+updated_antigravity = False
+for spec in antigravity.values():
+    if isinstance(spec, dict):
+        for entry in spec.get("Stop", []):
+            if isinstance(entry, dict) and is_sound_hook(entry.get("command")):
+                entry["command"] = player
+                updated_antigravity = True
+if not updated_antigravity:
     hook_entry = antigravity.setdefault("completion-sound", {})
     stop_list = hook_entry.setdefault("Stop", [])
     stop_list.extend(antigravity_template["completion-sound"]["Stop"])

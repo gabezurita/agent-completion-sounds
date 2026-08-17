@@ -24,13 +24,14 @@ cd agent-completion-sounds
 
 The command:
 
-1. Generates three short synthesized WAV chimes in
+1. Links executable scripts (`play-random-completion-sound.sh`, `sound-mode.sh`, `codex-notify.sh`, and aliases `play-random-completion-sound`, `soundmode`) into `~/.local/bin/`.
+2. Generates three short synthesized WAV chimes in
    `~/sounds/agent-completion-starter/`. They are original project output dedicated to
    the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
-2. Adds the shared player to Cursor's `stop`, Claude Code's `Stop`, Gemini CLI's
+3. Adds the shared player (`~/.local/bin/play-random-completion-sound.sh`) to Cursor's `stop`, Claude Code's `Stop`, Gemini CLI's
    `AfterAgent`, and Google Antigravity's `Stop` hooks.
-3. Sets Codex CLI's user-level `notify` command.
-4. Adds the starter folder to an existing `~/sounds/favorites.txt` and plays a test
+4. Sets Codex CLI's user-level `notify` command (`~/.local/bin/codex-notify.sh`).
+5. Adds the starter folder to an existing `~/sounds/favorites.txt` and plays a test
    sound. If that file does not exist, it remains absent and the default full-pool
    behavior includes both existing clips and the starter sounds.
 
