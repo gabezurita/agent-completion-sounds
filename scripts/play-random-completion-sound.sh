@@ -131,7 +131,7 @@ if [[ -n "${clip}" ]]; then
   if command -v osascript >/dev/null 2>&1 && [[ "$(uname)" == "Darwin" ]]; then
     # On macOS, escape the hook runner's process group by spawning via osascript
     # which orphans the process to launchd (PPID 1) so it plays fully and doesn't get cut off.
-    osascript -e "do shell script \"afplay -v ${VOLUME} \\\"${clip}\\\" >/dev/null 2>&1 &\""
+    osascript -e "do shell script \"afplay -v ${VOLUME} \\\"${clip}\\\" >/dev/null 2>&1 &\"" >/dev/null 2>&1
   elif command -v afplay >/dev/null 2>&1; then
     (afplay -v "${VOLUME}" "${clip}" >/dev/null 2>&1 &)
   elif command -v setsid >/dev/null 2>&1; then
