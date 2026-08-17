@@ -79,12 +79,17 @@ specific file and your intended use.
 
 ## Customize
 
-Use `favorites.txt` and the mode helper to select which folders participate:
+Use `favorites.txt` and the mode helper to select how sounds participate in your sessions. By default, the system runs in `session` mode which sticky-binds a single favorite unit per conversation.
+
+You can customize the mode using:
 
 ```bash
-./scripts/sound-mode.sh favorites
-./scripts/sound-mode.sh all
-./scripts/sound-mode.sh toggle
+./scripts/sound-mode.sh session      # bind 1 random favorite unit per conversation
+./scripts/sound-mode.sh favorites    # randomize favorite units on every turn
+./scripts/sound-mode.sh all          # randomize full pool on every turn
+./scripts/sound-mode.sh sc1-valkyrie # lock all sessions to a specific unit
+./scripts/sound-mode.sh toggle       # cycle through modes
+./scripts/sound-mode.sh clear        # reset current session sticky choices
 ```
 
 See the [README configuration section](README.md#configuration) for volume, disabling

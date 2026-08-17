@@ -117,22 +117,28 @@ download.
 
 ## Favorites and mode
 
-`favorites.txt` at the root of your sounds directory lists folder names, one per line;
-`#` starts a comment. `.mode` (also at the sounds root) holds `favorites` or `all`, read
-fresh on every hook call, so switching takes effect immediately with no app restart:
+`favorites.txt` at the root of your sounds directory lists folder names, one per line; `#` starts a comment. `.mode` (also at the sounds root) holds the active playback mode. It is read fresh on every hook call, so switching modes or locking units takes effect immediately with no application restart required.
 
-```bash
-scripts/sound-mode.sh            # show current mode
-scripts/sound-mode.sh favorites  # cycle only the favorites.txt folders
-scripts/sound-mode.sh all        # cycle the full sounds root
-scripts/sound-mode.sh toggle     # flip between the two
-```
+### Sound modes
+
+| Command | Mode Name | Description |
+| --- | --- | --- |
+| `soundmode` | | Show active mode (default is `session`) |
+| `soundmode session` | `session` | **(Default)** Bind 1 random favorite unit (from `favorites.txt`) per conversation |
+| `soundmode session-all` | `session-all` | Bind 1 random unit from the full pool per conversation |
+| `soundmode favorites` | `favorites` | Randomize across all favorites on every single turn |
+| `soundmode all` | `all` | Randomize across the full pool on every single turn |
+| `soundmode <unit-folder>`| `<unit-folder>` | Lock all sessions/turns to a specific unit (e.g. `sc1-valkyrie`) |
+| `soundmode clear` | `clear` / `reset` | Clear all active session sticky bindings (forces re-picking on next turn) |
+| `soundmode toggle` | `toggle` | Cycle between `session` → `favorites` → `all` |
 
 Add a shell alias for convenience:
 
 ```bash
 alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh"
 ```
+
+You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="sc1-valkyrie"`.
 
 ## Prior art
 
