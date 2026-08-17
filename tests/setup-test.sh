@@ -100,6 +100,8 @@ assert (home / ".local/bin/play-random-completion-sound").is_symlink()
 assert (home / ".local/bin/sound-mode.sh").is_symlink()
 assert (home / ".local/bin/soundmode").is_symlink()
 assert (home / ".local/bin/codex-notify.sh").is_symlink()
+assert (home / ".local/bin/fetch-completion-sounds.sh").is_symlink()
+assert (home / ".local/bin/soundfetch").is_symlink()
 
 cursor = json.loads((home / ".cursor/hooks.json").read_text())
 assert cursor["preserved"] == "cursor"

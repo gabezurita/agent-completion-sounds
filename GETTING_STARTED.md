@@ -24,7 +24,7 @@ cd agent-completion-sounds
 
 The command:
 
-1. Links executable scripts (`play-random-completion-sound.sh`, `sound-mode.sh`, `codex-notify.sh`, and aliases `play-random-completion-sound`, `soundmode`) into `~/.local/bin/`.
+1. Links executable scripts (`play-random-completion-sound.sh`, `sound-mode.sh`, `codex-notify.sh`, `fetch-completion-sounds.sh`, and aliases `play-random-completion-sound`, `soundmode`, `soundfetch`) into `~/.local/bin/`.
 2. Generates three short synthesized WAV chimes in
    `~/sounds/agent-completion-starter/`. They are original project output dedicated to
    the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
@@ -75,8 +75,16 @@ downloadable does not by itself make it safe to reuse.
 Other general-purpose sources include [Pixabay Sound Effects](https://pixabay.com/sound-effects/)
 under the [Pixabay Content License](https://pixabay.com/service/license-summary/) and
 [Mixkit Sound Effects](https://mixkit.co/free-sound-effects/) under the
-[Mixkit license](https://mixkit.co/license/). Review the applicable terms for the
-specific file and your intended use.
+### Curated Voice Sets (`soundfetch`)
+
+To download curated sets (e.g. StarCraft, Warcraft voice lines):
+
+```bash
+soundfetch --list              # list available sets with clip counts
+soundfetch --list sc1-tassadar # list quotes in a specific set
+soundfetch sc1-tassadar sc1-scv # download specific sets into ~/sounds/
+soundfetch                     # download all sets in manifest
+```
 
 ## Customize
 

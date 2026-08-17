@@ -30,9 +30,8 @@ verification, customization, and uninstall instructions.
   JSON on stdin.
 - `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
   shared player's stdin contract.
-- `scripts/sound-mode.sh` - toggles between two modes:
-  - `favorites` (default): only clips listed in `favorites.txt`
-  - `all`: every clip under the sounds root
+- `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes.
+- `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated voice line packs (e.g. StarCraft, Warcraft) into `~/sounds/`.
 - Cross-platform playback: `afplay` (macOS), falling back to `paplay` or `aplay` (Linux).
 
 ## Why
@@ -44,7 +43,7 @@ once with a favorites/all toggle for curating subsets of a larger pool.
 ## Manual setup
 
 1. Clone this repo somewhere permanent, e.g. `~/code/agent-completion-sounds`.
-2. Create a sounds root and drop audio files into subfolders:
+2. Create a sounds root and drop audio files into subfolders, or use `soundfetch` to download curated packs:
 
    ```bash
    mkdir -p ~/sounds/my-favorite-clips
@@ -65,6 +64,8 @@ once with a favorites/all toggle for curating subsets of a larger pool.
    ln -sf "$(pwd)/scripts/sound-mode.sh" ~/.local/bin/
    ln -sf "$(pwd)/scripts/sound-mode.sh" ~/.local/bin/soundmode
    ln -sf "$(pwd)/scripts/codex-notify.sh" ~/.local/bin/
+   ln -sf "$(pwd)/scripts/fetch-completion-sounds.sh" ~/.local/bin/
+   ln -sf "$(pwd)/scripts/fetch-completion-sounds.sh" ~/.local/bin/soundfetch
    ```
 
 5. Wire one or more hooks pointing to `~/.local/bin/play-random-completion-sound.sh` (or the absolute script path):

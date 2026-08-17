@@ -54,12 +54,16 @@ bin_player_short = bin_dir / "play-random-completion-sound"
 bin_soundmode = bin_dir / "sound-mode.sh"
 bin_soundmode_short = bin_dir / "soundmode"
 bin_notifier = bin_dir / "codex-notify.sh"
+bin_fetch = bin_dir / "fetch-completion-sounds.sh"
+bin_fetch_short = bin_dir / "soundfetch"
 
 link_binary(bin_player, raw_player)
 link_binary(bin_player_short, raw_player)
 link_binary(bin_soundmode, (repo / "scripts" / "sound-mode.sh").resolve())
 link_binary(bin_soundmode_short, (repo / "scripts" / "sound-mode.sh").resolve())
 link_binary(bin_notifier, raw_notifier)
+link_binary(bin_fetch, (repo / "scripts" / "fetch-completion-sounds.sh").resolve())
+link_binary(bin_fetch_short, (repo / "scripts" / "fetch-completion-sounds.sh").resolve())
 
 player = str(bin_player)
 notifier = str(bin_notifier)
