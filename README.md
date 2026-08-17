@@ -117,22 +117,44 @@ download.
 
 ## Favorites and mode
 
-`favorites.txt` at the root of your sounds directory lists folder names, one per line;
-`#` starts a comment. `.mode` (also at the sounds root) holds `favorites` or `all`, read
-fresh on every hook call, so switching takes effect immediately with no app restart:
+`favorites.txt` at the root of your sounds directory lists folder names, one per line; `#` starts a comment. `.mode` (also at the sounds root) holds the active playback mode. It is read fresh on every hook call, so switching modes or locking units takes effect immediately with no application restart required.
 
-```bash
-scripts/sound-mode.sh            # show current mode
-scripts/sound-mode.sh favorites  # cycle only the favorites.txt folders
-scripts/sound-mode.sh all        # cycle the full sounds root
-scripts/sound-mode.sh toggle     # flip between the two
-```
+### Sound modes
+
+| Command | Mode Name | Description |
+| --- | --- | --- |
+| `soundmode` | | Show active mode (default is `session`) |
+| `soundmode session` | `session` | **(Default)** Bind 1 random favorite unit (from `favorites.txt`) per conversation |
+| `soundmode session-all` | `session-all` | Bind 1 random unit from the full pool per conversation |
+| `soundmode favorites` | `favorites` | Randomize across all favorites on every single turn |
+| `soundmode all` | `all` | Randomize across the full pool on every single turn |
+| `soundmode <unit-folder>`| `<unit-folder>` | Lock all sessions/turns to a specific unit (e.g. `sc1-valkyrie`) |
+| `soundmode clear` | `clear` / `reset` | Clear all active session sticky bindings (forces re-picking on next turn) |
+| `soundmode toggle` | `toggle` | Cycle between `session` → `favorites` → `all` |
 
 Add a shell alias for convenience:
 
 ```bash
 alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh"
 ```
+
+You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="sc1-valkyrie"`.
+
+### Agent Identity (Sticky Sessions)
+
+By default (`session` mode), the player automatically assigns a sticky favorite sound unit to each unique agent session/conversation. This gives the agent in a given conversation thread a consistent "voice" or "identity" across all turns in that session.
+
+#### How it works:
+- **Conversation Tracking:** The player tracks unique session IDs or conversation threads across the supported agent surfaces.
+- **Sticky Assignment:** A random favorite sound unit from `favorites.txt` is chosen and cached under `/tmp/agent-sound-sessions/<session_id>.unit`.
+- **Persistent Voice:** All future turns in that specific session play sounds exclusively from that sticky unit's folder.
+- **Session Reset:** Run `soundmode clear` to clear active sticky bindings across all conversations. On the next turn, a new random favorite will be assigned.
+
+#### Autonomous Agent Skill
+If you use this system with an AI agent capable of using project-specific skills, there is a built-in agent skill called `agent-completion-sounds`. When activated:
+- **Thematic Suggestions:** The agent can assess its current focus (e.g. debugging vs. heavy compilation) and suggest changing its own session identity to a matching theme (e.g. `sc1-medic` for debugging, `sc1-battlecruiser` for compilation).
+- **Collision Avoidance:** The suggestion engine automatically queries active sessions to ensure it suggests a sound unit that is not currently bound to another active conversation.
+- **Self-Modification:** With user approval, the agent can write its selected identity folder directly to its active session unit file to immediately adopt its new persona.
 
 ## Prior art
 
