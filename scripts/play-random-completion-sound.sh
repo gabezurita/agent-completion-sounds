@@ -137,7 +137,10 @@ clip = sys.argv[1]
 volume = sys.argv[2]
 
 player_cmd = []
-if shutil.which("afplay"):
+if clip.lower().endswith(".ogg") and shutil.which("ffplay"):
+    vol = max(0, min(100, int(float(volume) * 100)))
+    player_cmd = ["ffplay", "-nodisp", "-autoexit", "-loglevel", "error", "-volume", str(vol), clip]
+elif shutil.which("afplay"):
     player_cmd = ["afplay", "-v", str(volume), clip]
 elif shutil.which("paplay"):
     player_cmd = ["paplay", clip]

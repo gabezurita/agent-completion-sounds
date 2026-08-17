@@ -167,9 +167,8 @@ for i in "${!folders[@]}"; do
   wanted "$folder" || continue
 
   dest_dir="${SOUNDS_ROOT}/${folder}"
-  dest="${dest_dir}/${name}"
-
-  if [[ -f "$dest" ]]; then
+  wav_name="${name%.*}.wav"
+  if [[ -f "$dest" || -f "${dest_dir}/${wav_name}" ]]; then
     skipped=$((skipped + 1))
     continue
   fi
@@ -201,9 +200,16 @@ for i in "${!folders[@]}"; do
     continue
   fi
 
-  mv "$tmp" "$dest"
-  chmod 644 "$dest"
-  printf 'fetched %s/%s\n' "$folder" "$name"
+  if [[ "$name" == *.ogg ]] && command -v ffmpeg >/dev/null 2>&1; then
+    ffmpeg -y -i "$tmp" "${dest_dir}/${wav_name}" -loglevel error
+    rm -f "$tmp"
+    chmod 644 "${dest_dir}/${wav_name}"
+    printf 'fetched and converted %s/%s -> %s\n' "$folder" "$name" "$wav_name"
+  else
+    mv "$tmp" "$dest"
+    chmod 644 "$dest"
+    printf 'fetched %s/%s\n' "$folder" "$name"
+  fi
   fetched=$((fetched + 1))
 done
 
