@@ -128,15 +128,41 @@ fi
 
 # 5. Play detached
 if [[ -n "${clip}" ]]; then
-  if command -v osascript >/dev/null 2>&1 && [[ "$(uname)" == "Darwin" ]]; then
-    # On macOS, escape the hook runner's process group by spawning via osascript
-    # which orphans the process to launchd (PPID 1) so it plays fully and doesn't get cut off.
-    osascript -e "do shell script \"afplay -v ${VOLUME} \\\"${clip}\\\" >/dev/null 2>&1 &\"" >/dev/null 2>&1
-  elif command -v afplay >/dev/null 2>&1; then
-    (afplay -v "${VOLUME}" "${clip}" >/dev/null 2>&1 &)
+  if command -v python3 >/dev/null 2>&1; then
+    # Double-fork daemon with setsid to completely decouple from hook runner process group and controlling TTY (e.g. iTerm/VS Code)
+    python3 - "${clip}" "${VOLUME}" <<'PY'
+import os, sys, shutil
+
+clip = sys.argv[1]
+volume = sys.argv[2]
+
+player_cmd = []
+if shutil.which("afplay"):
+    player_cmd = ["afplay", "-v", str(volume), clip]
+elif shutil.which("paplay"):
+    player_cmd = ["paplay", clip]
+elif shutil.which("aplay"):
+    player_cmd = ["aplay", "-q", clip]
+
+if player_cmd:
+    if os.fork() > 0:
+        sys.exit(0)
+    os.setsid()
+    if os.fork() > 0:
+        os._exit(0)
+    devnull = os.open(os.devnull, os.O_RDWR)
+    os.dup2(devnull, 0)
+    os.dup2(devnull, 1)
+    os.dup2(devnull, 2)
+    if devnull > 2:
+        os.close(devnull)
+    os.execvp(player_cmd[0], player_cmd)
+PY
   elif command -v setsid >/dev/null 2>&1; then
     # On Linux, run in a new process group so it survives hook process group reaping
     (setsid paplay "${clip}" >/dev/null 2>&1 &) || (setsid aplay -q "${clip}" >/dev/null 2>&1 &) || (paplay "${clip}" >/dev/null 2>&1 &)
+  elif command -v afplay >/dev/null 2>&1; then
+    (afplay -v "${VOLUME}" "${clip}" >/dev/null 2>&1 &)
   elif command -v paplay >/dev/null 2>&1; then
     (paplay "${clip}" >/dev/null 2>&1 &)
   elif command -v aplay >/dev/null 2>&1; then
