@@ -1,0 +1,497 @@
+# Curated agent completion-sound sets, read by fetch-completion-sounds.sh.
+#
+# Format, one clip per line:
+#   <folder>|<wiki filename>|<quote>|<wiki>
+#
+# folder        Destination under ~/sounds/. Matches the existing naming scheme
+#               (sc1-ghost, sc2-ghost, wc2-death-knight).
+# wiki filename Exact File: name on the wiki. The download URL is derived from
+#               its MD5, so the name must match the wiki exactly.
+# quote         The spoken line, for reference when picking favorites.
+# wiki          Optional image-path segment of the source wiki. Defaults to
+#               "starcraft". Note this is the wiki's internal name, not its
+#               subdomain: warcraft.fandom.com serves images under "wowpedia".
+#
+# Blank lines and lines starting with # are ignored. Add a set by appending
+# lines; no code change is needed.
+#
+# Prefer short lines (1-3s) so a clip does not overlap the next agent turn.
+
+# Tassadar, SC1 hero (High Templar form). Distinct voice and lines from the
+# generic SC1 High Templar already in sc1-high-templar/.
+sc1-tassadar|ProtossTassadarHighTemplarWhat00SC1.ogg|Yes, Executor?
+sc1-tassadar|ProtossTassadarHighTemplarWhat01SC1.ogg|I hear you.
+sc1-tassadar|ProtossTassadarHighTemplarWhat02SC1.ogg|How may I help?
+sc1-tassadar|ProtossTassadarHighTemplarWhat03SC1.ogg|Your will?
+sc1-tassadar|ProtossTassadarHighTemplarYes00SC1.ogg|Of course.
+sc1-tassadar|ProtossTassadarHighTemplarYes01SC1.ogg|It shall be done.
+sc1-tassadar|ProtossTassadarHighTemplarYes02SC1.ogg|For Adun!
+sc1-tassadar|ProtossTassadarHighTemplarYes03SC1.ogg|Terrie Khala!
+sc1-tassadar|ProtossTassadarHighTemplarPissed00SC1.ogg|Speak quickly, Executor!
+sc1-tassadar|ProtossTassadarHighTemplarPissed01SC1.ogg|I don't have time for games!
+sc1-tassadar|ProtossTassadarHighTemplarPissed02SC1.ogg|I was Executor long before you!
+sc1-tassadar|ProtossTassadarHighTemplarPissed03SC1.ogg|So do not try my patience!
+
+# Zeratul, SC1 hero (Dark Templar form).
+sc1-zeratul|ProtossZeratulWhat00SC1.ogg|Hmm?
+sc1-zeratul|ProtossZeratulWhat01SC1.ogg|You address me?
+sc1-zeratul|ProtossZeratulWhat02SC1.ogg|Your orders, Templar?
+sc1-zeratul|ProtossZeratulWhat03SC1.ogg|Khas Naradah!
+sc1-zeratul|ProtossZeratulYes00SC1.ogg|I do this for Aiur.
+sc1-zeratul|ProtossZeratulYes01SC1.ogg|So be it.
+sc1-zeratul|ProtossZeratulYes02SC1.ogg|It will be done.
+sc1-zeratul|ProtossZeratulYes03SC1.ogg|En Taro Adun!
+
+# Fenix, SC1 hero. Same lines in both forms; the dragoon set is the zealot
+# performance run through the dragoon synthesizer.
+sc1-fenix|ProtossFenixZealotWhat00SC1.ogg|Executor?
+sc1-fenix|ProtossFenixZealotWhat01SC1.ogg|Your command?
+sc1-fenix|ProtossFenixZealotWhat03SC1.ogg|I hunger for battle...
+sc1-fenix|ProtossFenixZealotYes00SC1.ogg|For Aiur!
+sc1-fenix|ProtossFenixZealotYes01SC1.ogg|Immediately!
+sc1-fenix|ProtossFenixZealotYes02SC1.ogg|Nach ta'kala!
+sc1-fenix|ProtossFenixZealotYes03SC1.ogg|As you will!
+sc1-fenix|ProtossFenixDragoonWhat00SC1.ogg|Executor? (dragoon)
+sc1-fenix|ProtossFenixDragoonWhat01SC1.ogg|Your command? (dragoon)
+sc1-fenix|ProtossFenixDragoonWhat03SC1.ogg|I hunger for battle... (dragoon)
+sc1-fenix|ProtossFenixDragoonYes00SC1.ogg|For Aiur! (dragoon)
+sc1-fenix|ProtossFenixDragoonYes01SC1.ogg|Immediately! (dragoon)
+sc1-fenix|ProtossFenixDragoonYes02SC1.ogg|Nach ta'kala! (dragoon)
+sc1-fenix|ProtossFenixDragoonYes03SC1.ogg|As you will! (dragoon)
+
+# SC1 Archon.
+sc1-archon|ProtossArchonReady00SC1.ogg|The merging is complete.
+sc1-archon|ProtossArchonWhat00SC1.ogg|We burn...
+sc1-archon|ProtossArchonWhat01SC1.ogg|We need focus...
+sc1-archon|ProtossArchonWhat02SC1.ogg|Thorasoh'cahp!
+sc1-archon|ProtossArchonWhat03SC1.ogg|Power overwhelming!
+sc1-archon|ProtossArchonYes00SC1.ogg|Destroy...
+sc1-archon|ProtossArchonYes01SC1.ogg|Annihilate...
+sc1-archon|ProtossArchonYes02SC1.ogg|Obliterate...
+sc1-archon|ProtossArchonYes03SC1.ogg|Eradicate...
+
+# SC1 Dark Templar.
+sc1-dark-templar|ProtossDarkTemplarReady00SC1.ogg|Adun Toridas.
+sc1-dark-templar|ProtossDarkTemplarWhat00SC1.ogg|Yes?
+sc1-dark-templar|ProtossDarkTemplarWhat01SC1.ogg|Zerashk Gulida.
+sc1-dark-templar|ProtossDarkTemplarWhat02SC1.ogg|I'm waiting...
+sc1-dark-templar|ProtossDarkTemplarWhat03SC1.ogg|Neraz Gulio.
+sc1-dark-templar|ProtossDarkTemplarYes00SC1.ogg|For Aiur.
+sc1-dark-templar|ProtossDarkTemplarYes01SC1.ogg|Ner'Mah.
+sc1-dark-templar|ProtossDarkTemplarYes02SC1.ogg|So be it.
+sc1-dark-templar|ProtossDarkTemplarYes03SC1.ogg|Very well.
+
+# SC1 Valkyrie, the German-accented terran missile frigate. Complete speaking
+# set. Pissed04 "Blucher!" is the Young Frankenstein horse-whinny gag.
+sc1-valkyrie|TerranValkyrieReady00SC1.ogg|Valkyrie, prepared.
+sc1-valkyrie|TerranValkyrieWhat00SC1.ogg|Need something destroyed?
+sc1-valkyrie|TerranValkyrieWhat01SC1.ogg|I am eager to help.
+sc1-valkyrie|TerranValkyrieWhat02SC1.ogg|Don't keep me waiting.
+sc1-valkyrie|TerranValkyrieWhat03SC1.ogg|Achtung!
+sc1-valkyrie|TerranValkyrieYes00SC1.ogg|Of course, mein Herr!
+sc1-valkyrie|TerranValkyrieYes01SC1.ogg|Perfect!
+sc1-valkyrie|TerranValkyrieYes02SC1.ogg|It's show time!
+sc1-valkyrie|TerranValkyrieYes03SC1.ogg|Jawohl!
+sc1-valkyrie|TerranValkyrieYes04SC1.ogg|Achtung!
+sc1-valkyrie|TerranValkyriePissed00SC1.ogg|This is very interesting... But stupid.
+sc1-valkyrie|TerranValkyriePissed01SC1.ogg|I have ways of blowing things up...
+sc1-valkyrie|TerranValkyriePissed02SC1.ogg|You're being very naughty.
+sc1-valkyrie|TerranValkyriePissed03SC1.ogg|Who's your mommy?
+sc1-valkyrie|TerranValkyriePissed04SC1.ogg|Blucher!
+
+# SC2 High Templar. HighTemplar_* is the Wings of Liberty and versus voice;
+# HighTemplarVoid_* is the post-Khala Legacy of the Void and co-op voice.
+sc2-high-templar|HighTemplar_Ready00.ogg|Khassar de Templari!
+sc2-high-templar|HighTemplar_What00.ogg|My charge?
+sc2-high-templar|HighTemplar_What02.ogg|Our minds are as one.
+sc2-high-templar|HighTemplar_What06.ogg|We are focused.
+sc2-high-templar|HighTemplar_Yes00.ogg|En Taro Tassadar.
+sc2-high-templar|HighTemplar_Yes01.ogg|I heed the call.
+sc2-high-templar|HighTemplar_Yes02.ogg|Thus I serve.
+sc2-high-templar|HighTemplar_Yes06.ogg|In unity, there is strength.
+sc2-high-templar|HighTemplar_Pissed01.ogg|Your thoughts betray you.
+sc2-high-templar|HighTemplar_Pissed07.ogg|Ride the lightning!
+sc2-high-templar|HighTemplarVoid_What02.ogg|Your thoughts are clear.
+sc2-high-templar|HighTemplarVoid_What05.ogg|Wisdom through adversity.
+sc2-high-templar|HighTemplarVoid_Yes02.ogg|As ever I serve.
+sc2-high-templar|HighTemplarVoid_Yes07.ogg|For Artanis.
+
+# SC2 Archon. Shortest, punchiest set in the game.
+sc2-archon|Archon_Ready00.ogg|The merging is complete.
+sc2-archon|Archon_What00.ogg|We BURN!
+sc2-archon|Archon_What01.ogg|We need focus!
+sc2-archon|Archon_What02.ogg|Power overwhelming!
+sc2-archon|Archon_What03.ogg|What guidance?
+sc2-archon|Archon_Yes00.ogg|Destroy.
+sc2-archon|Archon_Yes01.ogg|Annihilate.
+sc2-archon|Archon_Yes02.ogg|Obliterate.
+sc2-archon|Archon_Yes03.ogg|Eradicate.
+sc2-archon|Archon_Yes04.ogg|It will be.
+sc2-archon|Archon_Attack00.ogg|Dominate.
+sc2-archon|Archon_Attack01.ogg|Decimate.
+sc2-archon|Archon_Attack02.ogg|Vaporize.
+sc2-archon|Archon_Pissed02.ogg|It's beautiful!
+sc2-archon|Archon_Pissed05.ogg|I'm having a FLARE UP!
+sc2-archon|Archon_Pissed08.ogg|I'm... LIT!
+
+# Alarak, Tal'darim Highlord (Legacy of the Void and co-op).
+sc2-alarak|Alarak_Ready00.ogg|The hour of my vengeance has come.
+sc2-alarak|Alarak_What00.ogg|Speak, now!
+sc2-alarak|Alarak_What01.ogg|You address the Highlord?
+sc2-alarak|Alarak_What03.ogg|What?
+sc2-alarak|Alarak_What05.ogg|Of course I am needed.
+sc2-alarak|Alarak_What06.ogg|State your request.
+sc2-alarak|Alarak_Yes00.ogg|Only because I will it.
+sc2-alarak|Alarak_Yes01.ogg|As I desire.
+sc2-alarak|Alarak_Yes02.ogg|So shall it be.
+sc2-alarak|Alarak_Yes05.ogg|As I will it.
+sc2-alarak|Alarak_Attack00.ogg|Oblivion awaits.
+sc2-alarak|Alarak_Attack04.ogg|Burn!
+
+# Artanis, Hierarch of the Daelaam (Legacy of the Void voice set).
+sc2-artanis|ArtanisVoid_Ready00.ogg|We must stand as one.
+sc2-artanis|ArtanisVoid_What00.ogg|Dawn will come.
+sc2-artanis|ArtanisVoid_What01.ogg|We shall prevail.
+sc2-artanis|ArtanisVoid_What02.ogg|Our destiny awaits.
+sc2-artanis|ArtanisVoid_What03.ogg|Strength in unity.
+sc2-artanis|ArtanisVoid_Yes00.ogg|A bold plan.
+sc2-artanis|ArtanisVoid_Yes01.ogg|Our path is clear.
+sc2-artanis|ArtanisVoid_Yes03.ogg|Together we are strong.
+sc2-artanis|ArtanisVoid_Yes05.ogg|The future is ours.
+sc2-artanis|ArtanisVoid_Attack00.ogg|Vanquish!
+sc2-artanis|ArtanisVoid_Attack02.ogg|En Taro Zeratul.
+
+# Zeratul, SC2. Zeratul_* is the Wings of Liberty voice; ZeratulVoid_* is the
+# Legacy of the Void voice.
+sc2-zeratul|Zeratul_Ready00.ogg|I will do what must be done.
+sc2-zeratul|Zeratul_What02.ogg|You address me?
+sc2-zeratul|Zeratul_Yes00.ogg|Aiur will be restored.
+sc2-zeratul|Zeratul_Yes01.ogg|Glory to the Firstborn.
+sc2-zeratul|Zeratul_Yes02.ogg|Honor commands.
+sc2-zeratul|Zeratul_Yes06.ogg|I will fulfill my calling.
+sc2-zeratul|Zeratul_Attack03.ogg|Oblivion descends!
+sc2-zeratul|ZeratulVoid_What00.ogg|I seek the path of salvation.
+sc2-zeratul|ZeratulVoid_Yes00.ogg|I shall find a way.
+sc2-zeratul|ZeratulVoid_Yes01.ogg|Glory to the Daelaam.
+sc2-zeratul|ZeratulVoid_Yes06.ogg|The prophecy guides us.
+sc2-zeratul|ZeratulVoid_Pissed05.ogg|Kindly leave me to my meditation.
+
+# Talandar (the purifier Fenix), Legacy of the Void. Files are named Fenix_*.
+sc2-talandar-fenix|Fenix_Ready00.ogg|Show me my enemy!
+sc2-talandar-fenix|Fenix_What01.ogg|Your command?
+sc2-talandar-fenix|Fenix_What05.ogg|En taro Adun.
+sc2-talandar-fenix|Fenix_What06.ogg|I am the blade of Artanis.
+sc2-talandar-fenix|Fenix_What07.ogg|Isa atu!
+sc2-talandar-fenix|Fenix_Yes00.ogg|For Aiur!
+sc2-talandar-fenix|Fenix_Yes01.ogg|Immediately!
+sc2-talandar-fenix|Fenix_Yes03.ogg|As you will!
+sc2-talandar-fenix|Fenix_Yes04.ogg|Your will made manifest.
+sc2-talandar-fenix|Fenix_Yes07.ogg|Without hesitation.
+sc2-talandar-fenix|Fenix_Attack00.ogg|To battle.
+sc2-talandar-fenix|Fenix_Calldown00.ogg|My life for Aiur!
+
+# Karax, phase-smith. The most on-task voice set for an agent chime.
+sc2-karax|Karax_Ready00.ogg|I stand ready.
+sc2-karax|Karax_What00.ogg|Yes, Hierarch?
+sc2-karax|Karax_What01.ogg|My expertise is yours.
+sc2-karax|Karax_What02.ogg|What may I resolve?
+sc2-karax|Karax_What03.ogg|I will find the solution.
+sc2-karax|Karax_What04.ogg|I hear you.
+sc2-karax|Karax_Yes00.ogg|It will be.
+sc2-karax|Karax_Yes01.ogg|I concur.
+sc2-karax|Karax_Yes02.ogg|We are united.
+sc2-karax|Karax_Yes06.ogg|Purpose guides us.
+sc2-karax|Karax_Yes07.ogg|Aiur will be restored.
+
+# Selendis, executor.
+sc2-selendis|Selendis_Ready00.ogg|I will restore order.
+sc2-selendis|Selendis_What00.ogg|This is the executor.
+sc2-selendis|Selendis_What01.ogg|Our glory will be renewed.
+sc2-selendis|Selendis_What03.ogg|Justice is due.
+sc2-selendis|Selendis_Yes01.ogg|A sound plan.
+sc2-selendis|Selendis_Yes02.ogg|Precisely.
+sc2-selendis|Selendis_Yes03.ogg|Without fail.
+sc2-selendis|Selendis_Yes04.ogg|It is time to act.
+sc2-selendis|Selendis_Pissed00.ogg|Your correspondence is inadequate.
+sc2-selendis|Selendis_Pissed01.ogg|Insolence will not be tolerated.
+sc2-selendis|Selendis_Pissed02.ogg|My attention is needed elsewhere.
+# SC2 Oracle. Wiki quote templates spell these zVO_*, but MediaWiki upper-cases
+# the first character of a title, so the real file names begin ZVO_.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_005.ogg|Dimensional strings attuned.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_006.ogg|Oracle perceiving.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_007.ogg|You seek guidance?
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_008.ogg|How can I aid you?
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_010.ogg|Let us begin.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_014.ogg|I see.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_015.ogg|We interpret.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_017.ogg|It is destined.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_018.ogg|The stars align.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_020.ogg|Harmonized.
+sc2-oracle|ZVO_ProtossOracle_ProtossFlyingCaster_027.ogg|Hold on, I broke a string.
+
+# Tal'darim Ascendant.
+sc2-ascendant|Ascendant_Ready00.ogg|Vengeance for the betrayed.
+sc2-ascendant|Ascendant_What00.ogg|Ask, I may listen.
+sc2-ascendant|Ascendant_What01.ogg|Action is the only course.
+sc2-ascendant|Ascendant_What04.ogg|Remember your place.
+sc2-ascendant|Ascendant_What06.ogg|I heed, because Alarak wills it.
+sc2-ascendant|Ascendant_Yes00.ogg|Acceptable.
+sc2-ascendant|Ascendant_Yes01.ogg|As the chain commands.
+sc2-ascendant|Ascendant_Yes02.ogg|Ascension.
+sc2-ascendant|Ascendant_Yes06.ogg|I concur.
+sc2-ascendant|Ascendant_Attack00.ogg|Grovel, you worm!
+sc2-ascendant|Ascendant_Attack04.ogg|I shall ascend.
+sc2-ascendant|Ascendant_Attack05.ogg|Thus I conquer.
+
+# Tal'darim Destroyer.
+sc2-destroyer|Destroyer_What03.ogg|Give me purpose.
+sc2-destroyer|Destroyer_What04.ogg|Your foes shall burn.
+sc2-destroyer|Destroyer_What05.ogg|Speak your command.
+sc2-destroyer|Destroyer_What06.ogg|The time has come.
+sc2-destroyer|Destroyer_Yes00.ogg|Your will, imposed.
+sc2-destroyer|Destroyer_Yes01.ogg|Ash and cinder.
+sc2-destroyer|Destroyer_Yes02.ogg|Understood.
+sc2-destroyer|Destroyer_Yes03.ogg|Seek and destroy.
+sc2-destroyer|Destroyer_Yes05.ogg|Extermination shall come.
+sc2-destroyer|Destroyer_Attack05.ogg|Oh, yes.
+sc2-destroyer|Destroyer_Attack06.ogg|Gladly.
+
+# Warcraft II Peon. Sourced from the Warcraft wiki to exercise the optional
+# wiki field. "Work complete." is the literal completion chime.
+wc2-peon|Pnready.wav|Ready to work.|wowpedia
+wc2-peon|Owhat1.wav|Itog.|wowpedia
+wc2-peon|Owhat4.wav|Urr?|wowpedia
+wc2-peon|Owhat6.wav|Huh?|wowpedia
+wc2-peon|Oyessir1.wav|Zug zug.|wowpedia
+wc2-peon|Oyessir2.wav|Dabu.|wowpedia
+wc2-peon|Oyessir3.wav|Lok'tar.|wowpedia
+wc2-peon|Owrkdone.wav|Work complete.|wowpedia
+wc2-peon|Opissed1.wav|Whaaat?!|wowpedia
+
+# --- Terran and cross-game sets ---
+
+# SC1 Adjutant. The literal task-completion lines, and the closest thing
+# Blizzard shipped to a purpose-built agent chime.
+sc1-adjutant|TerranAdjutantUpdate02SC1.ogg|Research complete.
+sc1-adjutant|TerranAdjutantUpdate06SC1.ogg|Upgrade complete.
+sc1-adjutant|TerranAdjutantUpdate03SC1.ogg|Add-on complete.
+sc1-adjutant|TerranAdjutantUpdate04SC1.ogg|Nuclear launch detected.
+sc1-adjutant|TerranAdjutantUpdate07SC1.ogg|Nuclear missile ready.
+sc1-adjutant|TerranAdjutantUpdate00SC1.ogg|Base is under attack.
+sc1-adjutant|TerranAdjutantUpdate01SC1.ogg|Your forces are under attack.
+sc1-adjutant|TerranAdjutantError00SC1.ogg|Not enough minerals.
+sc1-adjutant|TerranAdjutantError02SC1.ogg|Additional Supply Depots required.
+
+# SC1 Marine.
+sc1-marine|TerranMarineReady00SC1.ogg|You wanna piece of me, boy?
+sc1-marine|TerranMarineWhat00SC1.ogg|Commander?
+sc1-marine|TerranMarineWhat01SC1.ogg|Standin' by.
+sc1-marine|TerranMarineWhat02SC1.ogg|Jacked up and good to go.
+sc1-marine|TerranMarineWhat03SC1.ogg|Gimme something to shoot!
+sc1-marine|TerranMarineYes00SC1.ogg|Go go go!
+sc1-marine|TerranMarineYes01SC1.ogg|Let's move!
+sc1-marine|TerranMarineYes02SC1.ogg|Outstanding!
+sc1-marine|TerranMarineYes03SC1.ogg|Rock and roll!
+
+# SC1 Firebat.
+sc1-firebat|TerranFirebatReady00SC1.ogg|Need a light?
+sc1-firebat|TerranFirebatWhat00SC1.ogg|Fire it up!
+sc1-firebat|TerranFirebatWhat02SC1.ogg|You got my attention.
+sc1-firebat|TerranFirebatWhat03SC1.ogg|Wanna turn up the heat?
+sc1-firebat|TerranFirebatYes00SC1.ogg|Naturally.
+sc1-firebat|TerranFirebatYes01SC1.ogg|Slammin'!
+sc1-firebat|TerranFirebatYes02SC1.ogg|You got it.
+sc1-firebat|TerranFirebatYes03SC1.ogg|Let's burn!
+sc1-firebat|TerranFirebatPissed02SC1.ogg|I love the smell of napalm.
+
+# SC1 Goliath.
+sc1-goliath|TerranGoliathReady00SC1.ogg|Goliath online.
+sc1-goliath|TerranGoliathWhat01SC1.ogg|Comm-link online.
+sc1-goliath|TerranGoliathWhat03SC1.ogg|Systems functional.
+sc1-goliath|TerranGoliathYes00SC1.ogg|Acknowledged H.Q.
+sc1-goliath|TerranGoliathYes02SC1.ogg|Confirmed.
+sc1-goliath|TerranGoliathYes03SC1.ogg|Target designated.
+
+# Jim Raynor, SC1 hero (marine form).
+sc1-raynor|TerranRaynorMarineWhat00SC1.ogg|Raynor here.
+sc1-raynor|TerranRaynorMarineWhat01SC1.ogg|This is Jimmy.
+sc1-raynor|TerranRaynorMarineWhat02SC1.ogg|Aaany time you're ready.
+sc1-raynor|TerranRaynorMarineWhat03SC1.ogg|Go ahead commander.
+sc1-raynor|TerranRaynorMarineYes00SC1.ogg|Sounds fun.
+sc1-raynor|TerranRaynorMarineYes01SC1.ogg|Riiight on.
+sc1-raynor|TerranRaynorMarineYes02SC1.ogg|This should be good.
+sc1-raynor|TerranRaynorMarineYes03SC1.ogg|Oh yeeaaahh...
+
+# Sarah Kerrigan, SC1 hero (ghost, pre-infestation).
+sc1-kerrigan|TerranKerriganWhat00SC1.ogg|Lieutenant Kerrigan reporting.
+sc1-kerrigan|TerranKerriganWhat01SC1.ogg|What now...
+sc1-kerrigan|TerranKerriganWhat02SC1.ogg|I'm waitin' on you!
+sc1-kerrigan|TerranKerriganWhat03SC1.ogg|I'm ready.
+sc1-kerrigan|TerranKerriganYes00SC1.ogg|I gotcha.
+sc1-kerrigan|TerranKerriganYes01SC1.ogg|Thinkin' the same thing.
+sc1-kerrigan|TerranKerriganYes02SC1.ogg|It'd be a pleasure.
+sc1-kerrigan|TerranKerriganYes03SC1.ogg|I read ya.
+
+# SC2 Marine.
+sc2-marine|Marine_Ready00.ogg|You want a piece of me, boy?
+sc2-marine|Marine_What01.ogg|Been waitin' on you.
+sc2-marine|Marine_What03.ogg|Who wants some?!
+sc2-marine|Marine_What04.ogg|Armed and ready!
+sc2-marine|Marine_Yes01.ogg|I'm on it!
+sc2-marine|Marine_Yes02.ogg|Outstanding!
+sc2-marine|Marine_Yes04.ogg|Go go go!
+sc2-marine|Marine_Yes07.ogg|Got it.
+sc2-marine|Marine_Yes16.ogg|Orders received.
+sc2-marine|Marine_Yes21.ogg|Roger that!
+sc2-marine|Marine_Yes22.ogg|Affirmative.
+
+# SC2 Medivac.
+sc2-medivac|Medivac_Ready00.ogg|Ready for dust-off.
+sc2-medivac|Medivac_What00.ogg|Waitin' on you.
+sc2-medivac|Medivac_What01.ogg|Pickin' up or droppin' off?
+sc2-medivac|Medivac_What05.ogg|Ready for pick up?
+sc2-medivac|Medivac_What06.ogg|Life flight's here.
+sc2-medivac|Medivac_Yes02.ogg|Loud and clear.
+sc2-medivac|Medivac_Yes03.ogg|Will do, command.
+sc2-medivac|Medivac_Yes05.ogg|Inbound.
+sc2-medivac|Medivac_Yes07.ogg|Acknowledged.
+sc2-medivac|Medivac_Yes09.ogg|Confirmed.
+sc2-medivac|Medivac_Yes10.ogg|On my way.
+
+# Jim Raynor, SC2 (Wings of Liberty).
+sc2-raynor|Raynor_Ready00.ogg|Let's make it count.
+sc2-raynor|Raynor_What00.ogg|What's up.
+sc2-raynor|Raynor_What01.ogg|Talk to me.
+sc2-raynor|Raynor_What02.ogg|What's the plan?
+sc2-raynor|Raynor_What03.ogg|Break it down.
+sc2-raynor|Raynor_What04.ogg|Sell me.
+sc2-raynor|Raynor_Yes05.ogg|Sounds like a plan.
+sc2-raynor|Raynor_Yes06.ogg|You can count on me.
+sc2-raynor|Raynor_Pissed06.ogg|Raiders roll.
+
+# Tychus Findlay, SC2 (marine form).
+sc2-tychus|TychusHeroVO_Ready00.ogg|It's about damn time!
+sc2-tychus|TychusHeroVO_What00.ogg|I'm a bad man.
+sc2-tychus|TychusHeroVO_What01.ogg|Don't provoke me.
+sc2-tychus|TychusHeroVO_What02.ogg|You gonna bark all day?
+sc2-tychus|TychusHeroVO_What03.ogg|Don't waste my time.
+sc2-tychus|TychusHeroVO_What04.ogg|What's in it for me?
+sc2-tychus|TychusHeroVO_Yes00.ogg|Walk the walk.
+sc2-tychus|TychusHeroVO_Yes02.ogg|Whatever it takes.
+
+# Nova Terra, SC2 (Wings of Liberty).
+sc2-nova|Nova_Ready00.ogg|Failure is never an option.
+sc2-nova|Nova_What00.ogg|Nova here.
+sc2-nova|Nova_What03.ogg|I'm reading you.
+sc2-nova|Nova_What04.ogg|Status report.
+sc2-nova|Nova_Yes01.ogg|Acknowledged.
+sc2-nova|Nova_Yes03.ogg|Got it.
+sc2-nova|Nova_Yes06.ogg|I'll make it happen.
+sc2-nova|Nova_Yes07.ogg|Executing.
+sc2-nova|Nova_Yes08.ogg|Consider it done.
+
+# Warcraft II Peasant. "Job's done." is the other classic completion line.
+wc2-peasant|Psready.wav|Ready to serve.|wowpedia
+wc2-peasant|Pswhat1.wav|Yes?|wowpedia
+wc2-peasant|Pswhat2.wav|Milord?|wowpedia
+wc2-peasant|Pswhat3.wav|What is it?|wowpedia
+wc2-peasant|Psyessr1.wav|Okay.|wowpedia
+wc2-peasant|Psyessr2.wav|Right-o.|wowpedia
+wc2-peasant|Psyessr3.wav|Alright.|wowpedia
+wc2-peasant|Psyessr4.wav|Yes, milord.|wowpedia
+wc2-peasant|Pswrkdon.wav|Job's done.|wowpedia
+
+# Warcraft III sets. The audio is verified, but the Warcraft wiki does not
+# publish a filename-to-transcript mapping the way the StarCraft wiki does, so
+# the quote column here is the sound category, not a transcript. Listen before
+# picking favorites.
+wc3-peasant|PeasantBuildingComplete1.wav|Building complete|wowpedia
+wc3-peasant|PeasantReady1.wav|Ready|wowpedia
+wc3-peasant|PeasantWhat1.wav|Select 1|wowpedia
+wc3-peasant|PeasantWhat2.wav|Select 2|wowpedia
+wc3-peasant|PeasantWhat3.wav|Select 3|wowpedia
+wc3-peasant|PeasantWhat4.wav|Select 4|wowpedia
+wc3-peasant|PeasantYes1.wav|Order 1|wowpedia
+wc3-peasant|PeasantYes2.wav|Order 2|wowpedia
+wc3-peasant|PeasantYes3.wav|Order 3|wowpedia
+wc3-peasant|PeasantYes4.wav|Order 4|wowpedia
+wc3-grunt|GruntReady1.wav|Ready|wowpedia
+wc3-grunt|GruntWhat1.wav|Select 1|wowpedia
+wc3-grunt|GruntWhat2.wav|Select 2|wowpedia
+wc3-grunt|GruntWhat3.wav|Select 3|wowpedia
+wc3-grunt|GruntWhat4.wav|Select 4|wowpedia
+wc3-grunt|GruntYes1.wav|Order 1|wowpedia
+wc3-grunt|GruntYes2.wav|Order 2|wowpedia
+wc3-grunt|GruntYes3.wav|Order 3|wowpedia
+wc3-grunt|GruntYes4.wav|Order 4|wowpedia
+wc3-illidan|IllidanWhat1.wav|Select 1|wowpedia
+wc3-illidan|IllidanWhat2.wav|Select 2|wowpedia
+wc3-illidan|IllidanWhat3.wav|Select 3|wowpedia
+wc3-illidan|IllidanWhat4.wav|Select 4|wowpedia
+wc3-illidan|IllidanYes1.wav|Order 1|wowpedia
+wc3-illidan|IllidanYes2.wav|Order 2|wowpedia
+wc3-illidan|IllidanYes3.wav|Order 3|wowpedia
+wc3-illidan|IllidanYes4.wav|Order 4|wowpedia
+wc3-arthas|ArthasWhat1.wav|Select 1|wowpedia
+wc3-arthas|ArthasWhat2.wav|Select 2|wowpedia
+wc3-arthas|ArthasWhat3.wav|Select 3|wowpedia
+wc3-arthas|ArthasWhat4.wav|Select 4|wowpedia
+wc3-arthas|ArthasWhat5.wav|Select 5|wowpedia
+wc3-arthas|ArthasYes1.wav|Order 1|wowpedia
+wc3-arthas|ArthasYes2.wav|Order 2|wowpedia
+wc3-arthas|ArthasYes3.wav|Order 3|wowpedia
+wc3-arthas|ArthasYes4.wav|Order 4|wowpedia
+wc3-thrall|ThrallWhat1.wav|Select 1|wowpedia
+wc3-thrall|ThrallWhat2.wav|Select 2|wowpedia
+wc3-thrall|ThrallWhat3.wav|Select 3|wowpedia
+wc3-thrall|ThrallWhat4.wav|Select 4|wowpedia
+wc3-thrall|ThrallYes1.wav|Order 1|wowpedia
+wc3-thrall|ThrallYes2.wav|Order 2|wowpedia
+wc3-thrall|ThrallYes3.wav|Order 3|wowpedia
+wc3-thrall|ThrallYes4.wav|Order 4|wowpedia
+
+# Overwatch ultimate callouts. Served under the "overwatch_gamepedia" image
+# path, not "overwatch".
+overwatch-ults|Cassidy_-_It's_high_noon.ogg|It's high noon.|overwatch_gamepedia
+overwatch-ults|D.Va_-_Nerf_this.ogg|Nerf this!|overwatch_gamepedia
+
+# SC1 SCV worker lines.
+sc1-scv|TerranSCVReady00SC1.ogg|SCV good to go, sir.
+sc1-scv|TerranSCVWhat00SC1.ogg|Orders received.
+sc1-scv|TerranSCVWhat01SC1.ogg|Yeah?
+sc1-scv|TerranSCVWhat02SC1.ogg|Talk to me.
+sc1-scv|TerranSCVWhat03SC1.ogg|Big job, huh?
+sc1-scv|TerranSCVYes00SC1.ogg|Right away, sir.
+sc1-scv|TerranSCVYes01SC1.ogg|Moving!
+sc1-scv|TerranSCVYes02SC1.ogg|Job finished!
+sc1-scv|TerranSCVYes03SC1.ogg|I can do that.
+
+# SC1 Medic lines.
+sc1-medic|TerranMedicReady00SC1.ogg|Prepped and ready.
+sc1-medic|TerranMedicWhat00SC1.ogg|Need medical attention?
+sc1-medic|TerranMedicWhat01SC1.ogg|Where does it hurt?
+sc1-medic|TerranMedicWhat02SC1.ogg|State the nature of your medical emergency.
+sc1-medic|TerranMedicYes00SC1.ogg|Right away.
+sc1-medic|TerranMedicYes01SC1.ogg|On my way.
+sc1-medic|TerranMedicYes02SC1.ogg|Stat!
+sc1-medic|TerranMedicYes03SC1.ogg|Administering aid.
+
+# WC3 Undead Acolyte lines.
+wc3-acolyte|AcolyteReady1.wav|The summoning is complete.|wowpedia
+wc3-acolyte|AcolyteWhat1.wav|Thy bidding?|wowpedia
+wc3-acolyte|AcolyteWhat2.wav|Yes, master.|wowpedia
+wc3-acolyte|AcolyteWhat3.wav|Where shall my blood be spilled?|wowpedia
+wc3-acolyte|AcolyteWhat4.wav|I bow to your will.|wowpedia
+wc3-acolyte|AcolyteYes1.wav|My life for Ner'zhul!|wowpedia
+wc3-acolyte|AcolyteYes2.wav|I gladly obey.|wowpedia
+wc3-acolyte|AcolyteYes3.wav|Thy will be done.|wowpedia
+wc3-acolyte|AcolyteYes4.wav|Death shall cleanse the world.|wowpedia
+
+# WC2 Ogre lines.
+wc2-ogre|Ogready.wav|We're ready!|wowpedia
+wc2-ogre|Ogwhat1.wav|Huh?|wowpedia
+wc2-ogre|Ogwhat2.wav|What?|wowpedia
+wc2-ogre|Ogyessr1.wav|Yes, boss.|wowpedia
+wc2-ogre|Ogyessr2.wav|All right.|wowpedia
+wc2-ogre|Ogyessr3.wav|I'm not ready!|wowpedia
+wc2-ogre|Ogpissd1.wav|Me busy!|wowpedia
