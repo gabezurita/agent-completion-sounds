@@ -1,0 +1,6 @@
+# Default royalty-free sounds from Kenney UI Audio (CC0 1.0)
+kenney-ui|click1.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click1.wav|Kenney UI Click 1
+kenney-ui|click2.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click2.wav|Kenney UI Click 2
+kenney-ui|click3.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click3.wav|Kenney UI Click 3
+kenney-ui|click4.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click4.wav|Kenney UI Click 4
+kenney-ui|click5.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click5.wav|Kenney UI Click 5

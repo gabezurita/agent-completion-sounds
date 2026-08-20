@@ -31,7 +31,7 @@ verification, customization, and uninstall instructions.
 - `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
   shared player's stdin contract.
 - `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes.
-- `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated voice line packs (e.g. StarCraft, Warcraft) into `~/sounds/`.
+- `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated sound sets (e.g. classical RTS, sci-fi builders, hero shooters) into `~/sounds/`.
 - Cross-platform playback: `afplay` (macOS), falling back to `paplay` or `aplay` (Linux).
 
 ## Why
@@ -116,6 +116,10 @@ scrape extension UI state or depend on private APIs. See the upstream contracts 
 - `AGENT_COMPLETION_SOUND_DISABLE=1` - disable playback entirely.
 - `AGENT_COMPLETION_SOUND_VOLUME=0.3` - volume for `afplay` (`0.0`-`1.0`, default `0.45`).
   Not used on the `paplay`/`aplay` fallback paths.
+
+### Extensible Profile Integration
+
+This framework is highly extensible and designed to integrate seamlessly with custom user environment profiles and dotfiles configurations. For example, you can dynamically configure your sound environments by exporting these variables within shell-level startup profiles (such as those detailed in the gabo-dotfiles configuration pattern under [gabezurita/gabo-dotfiles#198](https://github.com/gabezurita/gabo-dotfiles/issues/198)). This enables profile-based toggle configurations, multi-user sound sets, and workspace-specific audio behaviors.
 
 ## Additional sounds
 

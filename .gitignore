@@ -2,5 +2,11 @@
 .mode
 favorites.txt
 
+# Custom manifests
+scripts/completion-sound-sets.txt
+
 # OS cruft
 .DS_Store
+
+# Temporary doc outputs / workspace temp files
+docs/temp/
