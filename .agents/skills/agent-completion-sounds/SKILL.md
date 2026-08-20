@@ -73,20 +73,20 @@ Exclude these active units when making a new suggestion.
 
 Use the following map to suggest a unit that fits the "vibe" or type of task you are performing:
 
-| Sound Unit Folder | Game Source | Theme / Vibe | Suggested Tasks | Catchphrase / Dialogue Line |
+| Sound Unit Folder | Category | Theme / Vibe | Suggested Tasks | Catchphrase / Dialogue Line |
 | --- | --- | --- | --- | --- |
-| `sc1-scv` | StarCraft I | Labor, Construction, Setup | Setting up packages, writing boilerplate, OS configuration | *"SCV good to go, sir!"*, *"Ah! You scared me!"* |
-| `wc3-peasant` | WarCraft III | Steady Work, Refactoring | Labor-intensive refactoring, writing unit tests, cleaning code | *"Ready to work!"*, *"More work?"*, *"All right."* |
-| `wc2-peon` | WarCraft II | Quick Fixes, Maintenance | Running linters, minor formatting fixes, doc updates | *"Work, work!"*, *"Jobs done!"* |
-| `sc1-medic` | StarCraft I | Debugging, Repairs, Triage | Fixing test failures, troubleshooting crashes, bug hunting | *"Where does it hurt?"*, *"Stat!"*, *"Preparing medical prep."* |
-| `sc1-ghost` | StarCraft I | Deletion, Security, Stealth | Deleting dead code, security reviews, git prune, secrets review | *"Somebody call for an exterminator?"*, *"Ghost reporting."* |
-| `sc2-alarak` | StarCraft II | Sarcasm, Peer Review, Complexity | Code review drafts, complex planning, refactoring dirty code | *"Oh, is that what you call a plan?"*, *"Do not waste my time."* |
-| `sc1-battlecruiser`| StarCraft I | Launching, Heavy Compilation | Heavy build processes, complex CI pipeline setup, massive merges | *"Battlecruiser operational."*, *"Set a course."* |
-| `sc1-valkyrie` | StarCraft I | Direct Action, Automation | Script execution, batch renaming, automated deployment | *"Don't care, standard launch!"*, *"Blitzen!"* |
-| `sc1-high-templar`| StarCraft I | Algorithms, Type Safety | Data structure optimization, TypeScript/Rust compiler cleanups | *"My life for Aiur!"*, *"We feel your presence."* |
-| `wc3-arthas` | WarCraft III | Bold Features, Greenfield | Starting a new module, writing a feature spec, pioneering | *"For the King!"*, *"A noble cause."*, *"I will be done."* |
-| `wc3-illidan` | WarCraft III | Dark Secrets, Deep Archaeology | Investigating legacy code, resolving merge conflicts | *"You are not prepared!"*, *"At last."* |
-| `overwatch-ults` | Overwatch | Destruction, State Reset | Clearing caches, rebuilding DB, resetting virtualenvs | *"It's high noon!"*, *"Nerf this!"* |
+| `sc1-scv` | `sci-fi builders` | Labor, Construction, Setup | Setting up packages, writing boilerplate, OS configuration | *"SCV good to go, sir!"*, *"Ah! You scared me!"* |
+| `wc3-peasant` | `classical RTS` | Steady Work, Refactoring | Labor-intensive refactoring, writing unit tests, cleaning code | *"Ready to work!"*, *"More work?"*, *"All right."* |
+| `wc2-peon` | `classical RTS` | Quick Fixes, Maintenance | Running linters, minor formatting fixes, doc updates | *"Work, work!"*, *"Jobs done!"* |
+| `sc1-medic` | `classical RTS` | Debugging, Repairs, Triage | Fixing test failures, troubleshooting crashes, bug hunting | *"Where does it hurt?"*, *"Stat!"*, *"Preparing medical prep."* |
+| `sc1-ghost` | `classical RTS` | Deletion, Security, Stealth | Deleting dead code, security reviews, git prune, secrets review | *"Somebody call for an exterminator?"*, *"Ghost reporting."* |
+| `sc2-alarak` | `classical RTS` | Sarcasm, Peer Review, Complexity | Code review drafts, complex planning, refactoring dirty code | *"Oh, is that what you call a plan?"*, *"Do not waste my time."* |
+| `sc1-battlecruiser`| `classical RTS` | Launching, Heavy Compilation | Heavy build processes, complex CI pipeline setup, massive merges | *"Battlecruiser operational."*, *"Set a course."* |
+| `sc1-valkyrie` | `classical RTS` | Direct Action, Automation | Script execution, batch renaming, automated deployment | *"Don't care, standard launch!"*, *"Blitzen!"* |
+| `sc1-high-templar`| `classical RTS` | Algorithms, Type Safety | Data structure optimization, TypeScript/Rust compiler cleanups | *"My life for Aiur!"*, *"We feel your presence."* |
+| `wc3-arthas` | `classical RTS` | Bold Features, Greenfield | Starting a new module, writing a feature spec, pioneering | *"For the King!"*, *"A noble cause."*, *"I will be done."* |
+| `wc3-illidan` | `classical RTS` | Dark Secrets, Deep Archaeology | Investigating legacy code, resolving merge conflicts | *"You are not prepared!"*, *"At last."* |
+| `overwatch-ults` | `hero shooters` | Destruction, State Reset | Clearing caches, rebuilding DB, resetting virtualenvs | *"It's high noon!"*, *"Nerf this!"* |
 
 ---
 

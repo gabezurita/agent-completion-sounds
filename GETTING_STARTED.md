@@ -77,7 +77,7 @@ under the [Pixabay Content License](https://pixabay.com/service/license-summary/
 [Mixkit Sound Effects](https://mixkit.co/free-sound-effects/) under the
 ### Curated Voice Sets (`soundfetch`)
 
-To download curated sets (e.g. StarCraft, Warcraft voice lines):
+To download curated sets (e.g. classical RTS, sci-fi builders, hero shooters):
 
 ```bash
 soundfetch --list              # list available sets with clip counts

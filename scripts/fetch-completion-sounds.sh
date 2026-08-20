@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Download curated game voice clips into ~/sounds/<set>/ for the agent
-# completion-sound hook. Sets are declared in completion-sound-sets.txt.
-# Played by play-random-completion-sound.sh.
+# Download curated voice/audio clips into ~/sounds/<set>/ for the agent
+# completion-sound hook. Played by play-random-completion-sound.sh.
 # Documented in GETTING_STARTED.md and README.md.
 #
-# Clips are fetched to a local, untracked tree. Only this script, the manifest,
-# and the docs are committed; the audio is never added to git.
+# Clips are fetched to a local, untracked tree. Only this script, the default
+# manifest, and the docs are committed; the audio is never added to git.
 
 set -euo pipefail
 
@@ -17,10 +16,16 @@ while [[ -h "$SOURCE" ]]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
-MANIFEST="${COMPLETION_SOUND_MANIFEST:-${SCRIPT_DIR}/completion-sound-sets.txt}"
+# Fallback manifest logic
+if [[ -n "${COMPLETION_SOUND_MANIFEST:-}" ]]; then
+  MANIFEST="$COMPLETION_SOUND_MANIFEST"
+elif [[ -f "${SCRIPT_DIR}/completion-sound-sets.txt" ]]; then
+  MANIFEST="${SCRIPT_DIR}/completion-sound-sets.txt"
+else
+  MANIFEST="${SCRIPT_DIR}/completion-sound-sets.default.txt"
+fi
+
 SOUNDS_ROOT="${AGENT_SOUNDS_ROOT:-${HOME}/sounds}"
-STATIC_HOST="https://static.wikia.nocookie.net"
-DEFAULT_WIKI="starcraft"
 UA="agent-completion-sounds-fetch/1.0"
 
 usage() {
@@ -28,32 +33,12 @@ usage() {
 Usage: fetch-completion-sounds.sh [--list] [--dry-run] [set ...]
 
   (no args)   Fetch every set in the manifest.
-  set ...     Fetch only the named sets (folder names, e.g. sc1-tassadar).
+  set ...     Fetch only the named sets (folder names, e.g. kenney-ui).
   --list      List sets with clip counts. With set names, list their clips.
   --dry-run   Report what would be downloaded without writing anything.
 
 Existing files are left alone, so re-running only fills in what is missing.
 EOF
-}
-
-# MediaWiki derives a file's path from the MD5 of its normalized title: spaces
-# become underscores and the first character is upper-cased. Deriving it here
-# avoids an API round trip and a JSON dependency.
-md5_hex() {
-  if command -v md5 >/dev/null 2>&1; then
-    printf %s "$1" | md5
-  else
-    printf %s "$1" | md5sum | cut -d' ' -f1
-  fi
-}
-
-clip_url() {
-  local name="$1" wiki="$2" normalized hash
-  normalized="${name// /_}"
-  normalized="$(tr '[:lower:]' '[:upper:]' <<<"${normalized:0:1}")${normalized:1}"
-  hash="$(md5_hex "$normalized")"
-  printf '%s/%s/images/%s/%s/%s' \
-    "$STATIC_HOST" "$wiki" "${hash:0:1}" "${hash:0:2}" "$normalized"
 }
 
 mode="fetch"
@@ -92,21 +77,80 @@ wanted() {
   return 1
 }
 
-# Read the manifest once into parallel arrays so it can be walked more than
-# once (validating requested set names, then listing or fetching).
+# Generalised parser supporting JSON and CSV/TXT pipe-separated format
+# Outputs: folder\tname\turl\tdescription
+manifest_data=""
+if command -v python3 >/dev/null 2>&1; then
+  manifest_data=$(python3 -c '
+import json, os, sys
+manifest_path = sys.argv[1]
+if not os.path.exists(manifest_path):
+    print(f"Error: manifest {manifest_path} not found", file=sys.stderr)
+    sys.exit(1)
+_, ext = os.path.splitext(manifest_path)
+entries = []
+if ext.lower() == ".json":
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, list):
+                for item in data:
+                    entries.append((
+                        item.get("folder", "").strip(),
+                        item.get("name", "").strip(),
+                        item.get("url", "").strip(),
+                        item.get("description", "").strip()
+                    ))
+    except Exception as e:
+        print(f"Error parsing JSON manifest: {e}", file=sys.stderr)
+        sys.exit(1)
+else:
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split("|")
+                if len(parts) >= 3:
+                    folder = parts[0].strip()
+                    name = parts[1].strip()
+                    url = parts[2].strip()
+                    desc = parts[3].strip() if len(parts) > 3 else ""
+                    entries.append((folder, name, url, desc))
+    except Exception as e:
+        print(f"Error parsing CSV/TXT manifest: {e}", file=sys.stderr)
+        sys.exit(1)
+for folder, name, url, desc in entries:
+    if folder and name and url:
+        print(f"{folder}\t{name}\t{url}\t{desc}")
+' "$MANIFEST")
+else
+  # Basic Bash-only fallback for pipe-separated CSV if python3 is unavailable
+  # Only handles CSV/TXT format.
+  while IFS='|' read -r folder name url desc || [[ -n "${folder:-}" ]]; do
+    folder="${folder%%#*}"
+    [[ -z "${folder// /}" ]] && continue
+    [[ -z "${name:-}" ]] && continue
+    [[ -z "${url:-}" ]] && continue
+    manifest_data+="${folder%%#*}\t${name}\t${url}\t${desc:-}"$'\n'
+  done < "$MANIFEST"
+fi
+
 folders=()
 names=()
-quotes=()
-wikis=()
-while IFS='|' read -r folder name quote wiki || [[ -n "${folder:-}" ]]; do
-  folder="${folder%%#*}"
+urls=()
+descriptions=()
+
+while IFS=$'\t' read -r folder name url desc || [[ -n "${folder:-}" ]]; do
   [[ -z "${folder// /}" ]] && continue
   [[ -z "${name:-}" ]] && continue
+  [[ -z "${url:-}" ]] && continue
   folders+=("$folder")
   names+=("$name")
-  quotes+=("${quote:-}")
-  wikis+=("${wiki:-$DEFAULT_WIKI}")
-done < "$MANIFEST"
+  urls+=("$url")
+  descriptions+=("${desc:-}")
+done <<< "$manifest_data"
 
 ((${#folders[@]} > 0)) || {
   echo "No clips declared in $MANIFEST" >&2
@@ -146,7 +190,7 @@ if [[ "$mode" == "list" ]]; then
   else
     for i in "${!folders[@]}"; do
       wanted "${folders[i]}" || continue
-      printf '%-22s %-52s %s\n' "${folders[i]}" "${names[i]}" "${quotes[i]}"
+      printf '%-22s %-52s %s\n' "${folders[i]}" "${names[i]}" "${descriptions[i]}"
     done
   fi
   exit 0
@@ -164,6 +208,7 @@ failed=0
 for i in "${!folders[@]}"; do
   folder="${folders[i]}"
   name="${names[i]}"
+  url="${urls[i]}"
   wanted "$folder" || continue
 
   dest_dir="${SOUNDS_ROOT}/${folder}"
@@ -173,8 +218,6 @@ for i in "${!folders[@]}"; do
     skipped=$((skipped + 1))
     continue
   fi
-
-  url="$(clip_url "$name" "${wikis[i]}")"
 
   if ((dry_run)); then
     printf 'would fetch %s/%s\n' "$folder" "$name"
