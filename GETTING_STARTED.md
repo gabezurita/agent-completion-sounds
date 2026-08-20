@@ -81,8 +81,8 @@ To download curated sets (e.g. classical RTS, sci-fi builders, hero shooters):
 
 ```bash
 soundfetch --list              # list available sets with clip counts
-soundfetch --list sc1-tassadar # list quotes in a specific set
-soundfetch sc1-tassadar sc1-scv # download specific sets into ~/sounds/
+soundfetch --list kenney-ui    # list sounds in the default set
+soundfetch kenney-ui           # download specific sets into ~/sounds/
 soundfetch                     # download all sets in manifest
 ```
 
@@ -96,7 +96,7 @@ You can customize the mode using:
 ./scripts/sound-mode.sh session      # bind 1 random favorite unit per conversation
 ./scripts/sound-mode.sh favorites    # randomize favorite units on every turn
 ./scripts/sound-mode.sh all          # randomize full pool on every turn
-./scripts/sound-mode.sh sc1-valkyrie # lock all sessions to a specific unit
+./scripts/sound-mode.sh kenney-ui    # lock all sessions to a specific unit (e.g. kenney-ui)
 ./scripts/sound-mode.sh toggle       # cycle through modes
 ./scripts/sound-mode.sh clear        # reset current session sticky choices
 ```

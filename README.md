@@ -143,7 +143,7 @@ download.
 | `soundmode session-all` | `session-all` | Bind 1 random unit from the full pool per conversation |
 | `soundmode favorites` | `favorites` | Randomize across all favorites on every single turn |
 | `soundmode all` | `all` | Randomize across the full pool on every single turn |
-| `soundmode <unit-folder>`| `<unit-folder>` | Lock all sessions/turns to a specific unit (e.g. `sc1-valkyrie`) |
+| `soundmode <unit-folder>`| `<unit-folder>` | Lock all sessions/turns to a specific unit (e.g. `kenney-ui`) |
 | `soundmode clear` | `clear` / `reset` | Clear all active session sticky bindings (forces re-picking on next turn) |
 | `soundmode toggle` | `toggle` | Cycle between `session` → `favorites` → `all` |
 
@@ -153,7 +153,7 @@ Add a shell alias for convenience:
 alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh"
 ```
 
-You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="sc1-valkyrie"`.
+You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="kenney-ui"`.
 
 ### Agent Identity (Sticky Sessions)
 
