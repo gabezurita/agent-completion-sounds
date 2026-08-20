@@ -5,6 +5,7 @@ set -euo pipefail
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 TEST_ROOT=$(mktemp -d)
 trap 'rm -rf "${TEST_ROOT}"' EXIT
+export AGENT_SOUNDS_ROOT="${TEST_ROOT}/sounds"
 
 # Test 1: Dry-run default manifest listing
 printf 'Testing default manifest list...\n'
