@@ -119,7 +119,7 @@ scrape extension UI state or depend on private APIs. See the upstream contracts 
 
 ### Extensible Profile Integration
 
-This framework is highly extensible and designed to integrate seamlessly with custom user environment profiles and dotfiles configurations. For example, you can dynamically configure your sound environments by exporting these variables within shell-level startup profiles (such as those detailed in the gabo-dotfiles configuration pattern under [gabezurita/gabo-dotfiles#198](https://github.com/gabezurita/gabo-dotfiles/issues/198)). This enables profile-based toggle configurations, multi-user sound sets, and workspace-specific audio behaviors.
+This framework is highly extensible and designed to integrate seamlessly with custom user environment profiles and dotfiles configurations. For example, you can dynamically configure your sound environments by exporting these variables within shell-level startup profiles (such as those detailed in the gab0-system configuration pattern under [gabezurita/gab0-system#198](https://github.com/gabezurita/gab0-system/issues/198)). This enables profile-based toggle configurations, multi-user sound sets, and workspace-specific audio behaviors.
 
 ## Additional sounds
 
