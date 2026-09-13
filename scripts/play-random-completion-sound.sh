@@ -15,6 +15,7 @@ MODE_FILE="${SOUNDS_ROOT}/.mode"
 FALLBACK="/System/Library/Sounds/Glass.aiff"
 VOLUME="${AGENT_COMPLETION_SOUND_VOLUME:-0.45}"
 SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
+ACTIVE_WINDOW_SECS="${AGENT_SOUND_ACTIVE_WINDOW_SECS:-7200}"
 
 if [[ "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ]]; then
   printf '%s\n' '{}'
@@ -60,6 +61,32 @@ get_candidate_units() {
   printf '%s\n' "${units[@]}"
 }
 
+# Helper: inspect session cache and return units actively bound to other concurrent sessions
+get_active_units() {
+  local exclude_file="${1:-}"
+  local now cutoff
+  now=$(date +%s)
+  cutoff=$((now - ACTIVE_WINDOW_SECS))
+  local active=()
+
+  if [[ -d "${SESSION_CACHE_DIR}" ]]; then
+    for sf in "${SESSION_CACHE_DIR}"/*.unit; do
+      [[ -f "${sf}" ]] || continue
+      [[ -n "${exclude_file}" && "${sf}" == "${exclude_file}" ]] && continue
+
+      local smtime=0
+      smtime=$(stat -f %m "${sf}" 2>/dev/null || stat -c %Y "${sf}" 2>/dev/null || echo 0)
+
+      if ((smtime >= cutoff)); then
+        local u
+        u=$(cat "${sf}" 2>/dev/null || true)
+        [[ -n "${u}" ]] && active+=("${u}")
+      fi
+    done
+  fi
+  ((${#active[@]} > 0)) && printf '%s\n' "${active[@]}"
+}
+
 selected_unit=""
 
 # 1. Explicit unit override from environment or mode setting
@@ -74,6 +101,7 @@ elif [[ -n "${session_id}" && ("${MODE}" == "session" || "${MODE}" == "session-f
     cached_unit=$(cat "${session_file}" 2>/dev/null || true)
     if [[ -n "${cached_unit}" && -d "${SOUNDS_ROOT}/${cached_unit}" ]]; then
       selected_unit="${cached_unit}"
+      touch "${session_file}" 2>/dev/null || true
     fi
   fi
 
@@ -86,9 +114,85 @@ elif [[ -n "${session_id}" && ("${MODE}" == "session" || "${MODE}" == "session-f
     done < <(get_candidate_units "${pool}")
 
     if ((${#candidate_units[@]} > 0)); then
-      selected_unit="${candidate_units[RANDOM % ${#candidate_units[@]}]}"
+      # Collect units actively in use by other recent sessions
+      active_units=()
+      while IFS= read -r au; do
+        [[ -n "$au" ]] && active_units+=("$au")
+      done < <(get_active_units "${session_file}")
+
+      # Filter candidate units to those not currently in use
+      available_units=()
+      for cu in "${candidate_units[@]}"; do
+        in_use=0
+        if ((${#active_units[@]} > 0)); then
+          for au in "${active_units[@]}"; do
+            if [[ "${cu}" == "${au}" ]]; then
+              in_use=1
+              break
+            fi
+          done
+        fi
+        if ((in_use == 0)); then
+          available_units+=("${cu}")
+        fi
+      done
+
+      # If favorites pool is exhausted by active sessions, expand to full pool
+      all_units=()
+      if ((${#available_units[@]} == 0)) && [[ "${pool}" == "favorites" ]]; then
+        while IFS= read -r u; do
+          [[ -n "$u" ]] && all_units+=("$u")
+        done < <(get_candidate_units "all")
+
+        for cu in "${all_units[@]}"; do
+          in_use=0
+          if ((${#active_units[@]} > 0)); then
+            for au in "${active_units[@]}"; do
+              if [[ "${cu}" == "${au}" ]]; then
+                in_use=1
+                break
+              fi
+            done
+          fi
+          if ((in_use == 0)); then
+            available_units+=("${cu}")
+          fi
+        done
+      fi
+
+      if ((${#available_units[@]} > 0)); then
+        selected_unit="${available_units[RANDOM % ${#available_units[@]}]}"
+      else
+        # When all units are active, pick the candidate whose session was least recently active
+        search_pool=("${candidate_units[@]}")
+        if ((${#all_units[@]} > 0)); then
+          search_pool=("${all_units[@]}")
+        fi
+        now_ts=$(date +%s)
+        oldest_time=$((now_ts + 1000))
+        oldest_candidate="${search_pool[0]}"
+        for cu in "${search_pool[@]}"; do
+          unit_last_seen=0
+          if [[ -d "${SESSION_CACHE_DIR}" ]]; then
+            for sf in "${SESSION_CACHE_DIR}"/*.unit; do
+              [[ -f "${sf}" ]] || continue
+              if [[ "$(cat "${sf}" 2>/dev/null || true)" == "${cu}" ]]; then
+                smtime=$(stat -f %m "${sf}" 2>/dev/null || stat -c %Y "${sf}" 2>/dev/null || echo 0)
+                ((smtime > unit_last_seen)) && unit_last_seen="${smtime}"
+              fi
+            done
+          fi
+          if ((unit_last_seen < oldest_time)); then
+            oldest_time="${unit_last_seen}"
+            oldest_candidate="${cu}"
+          fi
+        done
+        selected_unit="${oldest_candidate}"
+      fi
+
       mkdir -p "${SESSION_CACHE_DIR}"
       printf '%s\n' "${selected_unit}" > "${session_file}"
+      touch "${session_file}" 2>/dev/null || true
     fi
   fi
 fi

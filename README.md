@@ -157,13 +157,15 @@ alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh
 
 You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="kenney-ui"`.
 
-### Agent Identity (Sticky Sessions)
+### Agent Identity (Sticky Sessions & Unique Voices)
 
 By default (`session` mode), the player automatically assigns a sticky favorite sound unit to each unique agent session/conversation. This gives the agent in a given conversation thread a consistent "voice" or "identity" across all turns in that session.
 
 #### How it works:
 - **Conversation Tracking:** The player tracks unique session IDs or conversation threads across the supported agent surfaces.
-- **Sticky Assignment:** A random favorite sound unit from `favorites.txt` is chosen and cached under `/tmp/agent-sound-sessions/<session_id>.unit`.
+- **Collision-Free Voice Selection:** When picking a voice for a new session, the player inspects recently active sessions in `/tmp/agent-sound-sessions/` (active within `AGENT_SOUND_ACTIVE_WINDOW_SECS`, default: 2 hours). Units actively bound to other concurrent sessions are excluded from the selection pool, ensuring each agent running in parallel has a distinct, recognizable voice.
+- **Adaptive Fallback:** If all favorite units are currently bound to active sessions, selection automatically expands to available units from the full pool. If all units across the library are active, it selects the unit whose session was least recently active.
+- **Activity Refresh:** On every turn, active sessions touch their cache file so their activity timestamp remains accurate.
 - **Persistent Voice:** All future turns in that specific session play sounds exclusively from that sticky unit's folder.
 - **Session Reset:** Run `soundmode clear` to clear active sticky bindings across all conversations. On the next turn, a new random favorite will be assigned.
 
