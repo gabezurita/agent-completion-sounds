@@ -121,8 +121,7 @@ def is_sound_hook(command):
     )
 
 
-def merge_nested_hook(path, event, group, command):
-    data = load_json(path)
+def merge_nested_hook(data, event, group, command):
     hooks = data.setdefault("hooks", {})
     groups = hooks.setdefault(event, [])
     updated = False
@@ -142,46 +141,56 @@ cursor_template = json_template("cursor-hooks.json.example")
 cursor = load_json(cursor_path)
 cursor.setdefault("version", cursor_template["version"])
 hooks = cursor.setdefault("hooks", {})
-entries = hooks.setdefault("stop", [])
-updated_cursor = False
-for item in entries:
-    if isinstance(item, dict) and is_sound_hook(item.get("command")):
-        item["command"] = player
-        updated_cursor = True
-if not updated_cursor:
-    entries.extend(cursor_template["hooks"]["stop"])
+for event in ("beforeSubmitPrompt", "stop"):
+    entries = hooks.setdefault(event, [])
+    updated_cursor = False
+    for item in entries:
+        if isinstance(item, dict) and is_sound_hook(item.get("command")):
+            item["command"] = player
+            updated_cursor = True
+    if not updated_cursor and event in cursor_template["hooks"]:
+        entries.extend(cursor_template["hooks"][event])
 
 claude_template = json_template("claude-code-stop-hook.json.snippet")
 claude_path = home / ".claude" / "settings.json"
-claude = merge_nested_hook(
-    claude_path,
-    "Stop",
-    claude_template["hooks"]["Stop"][0],
-    player,
-)
+claude = load_json(claude_path)
+for event in ("UserPromptSubmit", "Stop"):
+    if event in claude_template["hooks"]:
+        merge_nested_hook(
+            claude,
+            event,
+            claude_template["hooks"][event][0],
+            player,
+        )
+
 gemini_template = json_template("gemini-cli-hooks.json.snippet")
 gemini_path = home / ".gemini" / "settings.json"
-gemini = merge_nested_hook(
-    gemini_path,
-    "AfterAgent",
-    gemini_template["hooks"]["AfterAgent"][0],
-    player,
-)
+gemini = load_json(gemini_path)
+for event in ("BeforeAgent", "AfterAgent"):
+    if event in gemini_template["hooks"]:
+        merge_nested_hook(
+            gemini,
+            event,
+            gemini_template["hooks"][event][0],
+            player,
+        )
 
 antigravity_template = json_template("antigravity-hooks.json.snippet")
 antigravity_path = home / ".gemini" / "config" / "hooks.json"
 antigravity = load_json(antigravity_path)
-updated_antigravity = False
-for spec in antigravity.values():
-    if isinstance(spec, dict):
-        for entry in spec.get("Stop", []):
-            if isinstance(entry, dict) and is_sound_hook(entry.get("command")):
-                entry["command"] = player
-                updated_antigravity = True
-if not updated_antigravity:
-    hook_entry = antigravity.setdefault("completion-sound", {})
-    stop_list = hook_entry.setdefault("Stop", [])
-    stop_list.extend(antigravity_template["completion-sound"]["Stop"])
+for event in ("PreInvocation", "Stop"):
+    updated_antigravity = False
+    for spec in antigravity.values():
+        if isinstance(spec, dict):
+            for entry in spec.get(event, []):
+                if isinstance(entry, dict) and is_sound_hook(entry.get("command")):
+                    entry["command"] = player
+                    updated_antigravity = True
+    if not updated_antigravity:
+        hook_entry = antigravity.setdefault("completion-sound", {})
+        event_list = hook_entry.setdefault(event, [])
+        if event in antigravity_template["completion-sound"]:
+            event_list.extend(antigravity_template["completion-sound"][event])
 
 codex_path = home / ".codex" / "config.toml"
 codex_text = codex_path.read_text() if codex_path.exists() else ""

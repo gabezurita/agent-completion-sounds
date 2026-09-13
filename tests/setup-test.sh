@@ -108,13 +108,17 @@ assert cursor["preserved"] == "cursor"
 commands = [entry["command"] for entry in cursor["hooks"]["stop"]]
 assert commands.count(player) == 1
 assert "/existing/cursor" in commands
-assert cursor["hooks"]["beforeSubmitPrompt"] == [{"command": "/existing/before"}]
+commands_prompt = [entry["command"] for entry in cursor["hooks"]["beforeSubmitPrompt"]]
+assert commands_prompt.count(player) == 1
+assert "/existing/before" in commands_prompt
 
 claude = json.loads((home / ".claude/settings.json").read_text())
 assert claude["preserved"] == "claude"
 commands = [hook["command"] for group in claude["hooks"]["Stop"] for hook in group["hooks"]]
 assert commands.count(player) == 1
 assert "/existing/claude" in commands
+commands_prompt = [hook["command"] for group in claude["hooks"]["UserPromptSubmit"] for hook in group["hooks"]]
+assert commands_prompt.count(player) == 1
 assert claude["hooks"]["PreToolUse"] == []
 
 gemini = json.loads((home / ".gemini/settings.json").read_text())
@@ -122,7 +126,8 @@ assert gemini["preserved"] == "gemini"
 commands = [hook["command"] for group in gemini["hooks"]["AfterAgent"] for hook in group["hooks"]]
 assert commands.count(player) == 1
 assert "/existing/gemini" in commands
-assert gemini["hooks"]["BeforeAgent"] == []
+commands_before = [hook["command"] for group in gemini["hooks"]["BeforeAgent"] for hook in group["hooks"]]
+assert commands_before.count(player) == 1
 
 antigravity = json.loads((home / ".gemini/config/hooks.json").read_text())
 assert antigravity["preserved"] == "antigravity"
@@ -133,6 +138,12 @@ commands = [
 ]
 assert commands.count(player) == 1
 assert "/existing/antigravity" in commands
+commands_pre = [
+    entry["command"]
+    for spec in antigravity.values() if isinstance(spec, dict)
+    for entry in spec.get("PreInvocation", []) if isinstance(entry, dict)
+]
+assert commands_pre.count(player) == 1
 
 codex_text = (home / ".codex/config.toml").read_text()
 preamble = "\n".join(
