@@ -71,17 +71,19 @@ once with a favorites/all toggle for curating subsets of a larger pool.
 5. Wire one or more hooks pointing to `~/.local/bin/play-random-completion-sound.sh` (or the absolute script path):
 
    - Cursor: copy `hooks/cursor-hooks.json.example` to `~/.cursor/hooks.json`
-     (merge if you already have one).
+     (merge if you already have one). Configures `beforeSubmitPrompt` (fires when sending a request)
+     and `stop` (fires when turn completes).
    - Claude Code: merge the contents of `hooks/claude-code-stop-hook.json.snippet`
-     into `~/.claude/settings.json` (create the file if it does not exist). The Claude
+     into `~/.claude/settings.json` (create the file if it does not exist). Configures
+     `UserPromptSubmit` (fires when submitting a prompt) and `Stop` (fires when turn ends). The Claude
      Code VS Code extension shares this settings file, so this also enables sounds in
      its graphical panel.
    - Gemini CLI: merge `hooks/gemini-cli-hooks.json.snippet` into
-     `~/.gemini/settings.json`. The `AfterAgent` event fires once after each completed
-     turn.
+     `~/.gemini/settings.json`. Configures `BeforeAgent` (fires before agent starts) and
+     `AfterAgent` (fires once after each completed turn).
    - Google Antigravity: merge `hooks/antigravity-hooks.json.snippet` into
-     `~/.gemini/config/hooks.json` (or `.agents/hooks.json` in your workspace). The
-     `Stop` lifecycle hook fires when the execution loop terminates.
+     `~/.gemini/config/hooks.json` (or `.agents/hooks.json` in your workspace). Configures
+     `PreInvocation` (fires before model execution begins) and `Stop` (fires when execution loop terminates).
    - Codex CLI: add `hooks/codex-cli-config.toml.snippet` to the user-level
      `~/.codex/config.toml` (pointing to `~/.local/bin/codex-notify.sh`). Insert the `notify` line before the first TOML table header
      (any line beginning with `[`), so it remains a top-level setting rather than becoming
@@ -93,11 +95,11 @@ once with a favorites/all toggle for curating subsets of a larger pool.
 
 | Surface | Status | Wiring |
 | --- | --- | --- |
-| Cursor | Supported | `stop` hook |
-| Claude Code CLI | Supported | `Stop` hook |
+| Cursor | Supported | `beforeSubmitPrompt` (prompt send) & `stop` (turn complete) hooks |
+| Claude Code CLI | Supported | `UserPromptSubmit` (prompt send) & `Stop` (turn complete) hooks |
 | Claude Code VS Code extension | Supported | Shares the CLI's `~/.claude/settings.json` hooks |
-| Gemini CLI | Supported | `AfterAgent` hook |
-| Google Antigravity | Supported | `Stop` lifecycle hook in `~/.gemini/config/hooks.json` |
+| Gemini CLI | Supported | `BeforeAgent` (prompt send) & `AfterAgent` (turn complete) hooks |
+| Google Antigravity | Supported | `PreInvocation` (prompt send) & `Stop` (turn complete) hooks in `~/.gemini/config/hooks.json` |
 | Codex CLI | Supported | User-level `notify` command via adapter |
 | GitHub Copilot in VS Code | Not currently supported | No documented user-scriptable completion hook |
 | Codex VS Code extension | Not currently supported | No documented user-scriptable completion hook |
