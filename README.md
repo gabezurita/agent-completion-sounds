@@ -118,6 +118,11 @@ scrape extension UI state or depend on private APIs. See the upstream contracts 
 - `AGENT_COMPLETION_SOUND_DISABLE=1` - disable playback entirely.
 - `AGENT_COMPLETION_SOUND_VOLUME=0.3` - volume for `afplay` (`0.0`-`1.0`, default `0.45`).
   Not used on the `paplay`/`aplay` fallback paths.
+- `AGENT_SOUND_COOLDOWN_SECS=15` - minimum duration / cooldown in seconds (default `15`).
+  Suppresses end sounds on quick turns where a start sound just played and throttles rapid
+  duplicate triggers. Set to `0` to disable cooldown.
+- `AGENT_SOUND_ACTIVE_WINDOW_SECS=7200` - window in seconds (default `7200` / 2h) for tracking
+  active concurrent session voice assignments.
 
 ### Extensible Profile Integration
 
