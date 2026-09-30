@@ -16,11 +16,21 @@ FALLBACK="/System/Library/Sounds/Glass.aiff"
 VOLUME="${AGENT_COMPLETION_SOUND_VOLUME:-0.45}"
 SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
 ACTIVE_WINDOW_SECS="${AGENT_SOUND_ACTIVE_WINDOW_SECS:-7200}"
+COOLDOWN_SECS="${AGENT_SOUND_COOLDOWN_SECS:-15}"
 
 if [[ "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ]]; then
   printf '%s\n' '{}'
   exit 0
 fi
+
+# Parse explicit event argument (start vs stop)
+event=""
+for arg in "$@"; do
+  case "${arg}" in
+    start|--start|--event=start) event="start" ;;
+    stop|--stop|--event=stop) event="stop" ;;
+  esac
+done
 
 # Active mode: "session" (default: sticky unit from favorites per conversation),
 # "favorites" / "turn-favorites" (randomize favorite unit every turn),
@@ -29,11 +39,54 @@ fi
 # or a specific folder name (e.g. "sc1-valkyrie").
 MODE=$(cat "${MODE_FILE}" 2>/dev/null || echo "session")
 
-# Extract conversation/session ID from stdin payload if present.
+# Extract conversation/session ID and invocation number from stdin payload if present.
 session_id=""
+invocation_num=""
 if [[ -n "${payload}" ]]; then
   session_id=$(printf '%s' "${payload}" | grep -oE '"(conversationId|conversation_id|session_id|sessionId)":[[:space:]]*"[^"]+"' | head -n 1 | sed -E 's/.*:[[:space:]]*"([^"]+)".*/\1/' || true)
   session_id="${session_id//[^a-zA-Z0-9_.-]/_}"
+
+  inv_match=$(printf '%s' "${payload}" | grep -oE '"(invocationNum|invocation_num)":[[:space:]]*[0-9]+' | head -n 1 | sed -E 's/.*:[[:space:]]*([0-9]+).*/\1/' || true)
+  if [[ -n "${inv_match}" ]]; then
+    invocation_num="${inv_match}"
+  fi
+fi
+
+# In multi-step agent runs (e.g. Antigravity PreInvocation), suppress intermediate tool steps
+if [[ -n "${invocation_num}" && "${invocation_num}" -gt 1 ]]; then
+  printf '%s\n' '{}'
+  exit 0
+fi
+
+# Infer event type if not explicitly supplied via CLI argument
+if [[ -z "${event}" ]]; then
+  if [[ -n "${invocation_num}" && "${invocation_num}" -eq 1 ]]; then
+    event="start"
+  elif printf '%s' "${payload}" | grep -qiE '"(terminationReason|executionNum|stop_reason|stop)"'; then
+    event="stop"
+  elif printf '%s' "${payload}" | grep -qiE '"(userPrompt|beforeSubmitPrompt|userPromptSubmit|beforeAgent|prompt)"'; then
+    event="start"
+  else
+    event="stop"
+  fi
+fi
+
+# Check session cooldown state
+state_file=""
+if [[ -n "${session_id}" ]]; then
+  state_file="${SESSION_CACHE_DIR}/${session_id}.time"
+else
+  state_file="${SESSION_CACHE_DIR}/global.time"
+fi
+
+now=$(date +%s)
+last_start_ts=0
+last_sound_ts=0
+
+if [[ -f "${state_file}" ]]; then
+  read -r last_start_ts last_sound_ts < "${state_file}" 2>/dev/null || true
+  last_start_ts="${last_start_ts:-0}"
+  last_sound_ts="${last_sound_ts:-0}"
 fi
 
 # Helper: load valid candidate unit folders for the current mode
@@ -61,6 +114,21 @@ get_candidate_units() {
   printf '%s\n' "${units[@]}"
 }
 
+# Helper: safely get file modification timestamp as an integer across GNU (Linux) and BSD (macOS)
+get_file_mtime() {
+  local target="$1"
+  local mt
+  if mt=$(stat -c %Y "${target}" 2>/dev/null) && [[ "${mt}" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "${mt}"
+    return 0
+  fi
+  if mt=$(stat -f %m "${target}" 2>/dev/null) && [[ "${mt}" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "${mt}"
+    return 0
+  fi
+  echo 0
+}
+
 # Helper: inspect session cache and return units actively bound to other concurrent sessions
 get_active_units() {
   local exclude_file="${1:-}"
@@ -74,8 +142,8 @@ get_active_units() {
       [[ -f "${sf}" ]] || continue
       [[ -n "${exclude_file}" && "${sf}" == "${exclude_file}" ]] && continue
 
-      local smtime=0
-      smtime=$(stat -f %m "${sf}" 2>/dev/null || stat -c %Y "${sf}" 2>/dev/null || echo 0)
+      local smtime
+      smtime=$(get_file_mtime "${sf}")
 
       if ((smtime >= cutoff)); then
         local u
@@ -177,7 +245,7 @@ elif [[ -n "${session_id}" && ("${MODE}" == "session" || "${MODE}" == "session-f
             for sf in "${SESSION_CACHE_DIR}"/*.unit; do
               [[ -f "${sf}" ]] || continue
               if [[ "$(cat "${sf}" 2>/dev/null || true)" == "${cu}" ]]; then
-                smtime=$(stat -f %m "${sf}" 2>/dev/null || stat -c %Y "${sf}" 2>/dev/null || echo 0)
+                smtime=$(get_file_mtime "${sf}")
                 ((smtime > unit_last_seen)) && unit_last_seen="${smtime}"
               fi
             done
@@ -193,6 +261,27 @@ elif [[ -n "${session_id}" && ("${MODE}" == "session" || "${MODE}" == "session-f
       mkdir -p "${SESSION_CACHE_DIR}"
       printf '%s\n' "${selected_unit}" > "${session_file}"
       touch "${session_file}" 2>/dev/null || true
+    fi
+  fi
+fi
+
+if ((COOLDOWN_SECS > 0)); then
+  if [[ "${event}" == "stop" ]]; then
+    # Suppress end sound if turn finished too quickly after start sound (short turn)
+    if ((last_start_ts > 0 && (now - last_start_ts < COOLDOWN_SECS))); then
+      printf '%s\n' '{}'
+      exit 0
+    fi
+    # Suppress end sound if any sound was played too recently (duplicate stop hooks)
+    if ((last_sound_ts > 0 && (now - last_sound_ts < COOLDOWN_SECS))); then
+      printf '%s\n' '{}'
+      exit 0
+    fi
+  elif [[ "${event}" == "start" ]]; then
+    # Throttle duplicate start hooks within 2 seconds
+    if ((last_start_ts > 0 && (now - last_start_ts < 2))); then
+      printf '%s\n' '{}'
+      exit 0
     fi
   fi
 fi
@@ -232,6 +321,13 @@ fi
 
 # 5. Play detached
 if [[ -n "${clip}" ]]; then
+  mkdir -p "${SESSION_CACHE_DIR}"
+  if [[ "${event}" == "start" ]]; then
+    printf '%s %s\n' "${now}" "${now}" > "${state_file}"
+  else
+    printf '%s %s\n' "${last_start_ts}" "${now}" > "${state_file}"
+  fi
+
   if command -v python3 >/dev/null 2>&1; then
     # Double-fork daemon with setsid to completely decouple from hook runner process group and controlling TTY (e.g. iTerm/VS Code)
     python3 - "${clip}" "${VOLUME}" <<'PY'
