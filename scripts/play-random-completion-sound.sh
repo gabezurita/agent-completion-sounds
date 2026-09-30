@@ -114,6 +114,21 @@ get_candidate_units() {
   printf '%s\n' "${units[@]}"
 }
 
+# Helper: safely get file modification timestamp as an integer across GNU (Linux) and BSD (macOS)
+get_file_mtime() {
+  local target="$1"
+  local mt
+  if mt=$(stat -c %Y "${target}" 2>/dev/null) && [[ "${mt}" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "${mt}"
+    return 0
+  fi
+  if mt=$(stat -f %m "${target}" 2>/dev/null) && [[ "${mt}" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "${mt}"
+    return 0
+  fi
+  echo 0
+}
+
 # Helper: inspect session cache and return units actively bound to other concurrent sessions
 get_active_units() {
   local exclude_file="${1:-}"
@@ -127,8 +142,8 @@ get_active_units() {
       [[ -f "${sf}" ]] || continue
       [[ -n "${exclude_file}" && "${sf}" == "${exclude_file}" ]] && continue
 
-      local smtime=0
-      smtime=$(stat -f %m "${sf}" 2>/dev/null || stat -c %Y "${sf}" 2>/dev/null || echo 0)
+      local smtime
+      smtime=$(get_file_mtime "${sf}")
 
       if ((smtime >= cutoff)); then
         local u
@@ -230,7 +245,7 @@ elif [[ -n "${session_id}" && ("${MODE}" == "session" || "${MODE}" == "session-f
             for sf in "${SESSION_CACHE_DIR}"/*.unit; do
               [[ -f "${sf}" ]] || continue
               if [[ "$(cat "${sf}" 2>/dev/null || true)" == "${cu}" ]]; then
-                smtime=$(stat -f %m "${sf}" 2>/dev/null || stat -c %Y "${sf}" 2>/dev/null || echo 0)
+                smtime=$(get_file_mtime "${sf}")
                 ((smtime > unit_last_seen)) && unit_last_seen="${smtime}"
               fi
             done
