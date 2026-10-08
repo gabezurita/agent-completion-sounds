@@ -17,8 +17,8 @@ echo "==> Packaging Alfred workflow into ${OUTPUT_FILE}..."
 # An .alfredworkflow file is a zip archive containing info.plist and workflow assets at its root
 (
   cd "${ALFRED_DIR}"
-  chmod +x *.sh
-  zip -q -r "${OUTPUT_FILE}" info.plist *.sh
+  chmod +x ./*.sh
+  zip -q -r "${OUTPUT_FILE}" info.plist ./*.sh
 )
 
 echo "==> Successfully created ${OUTPUT_FILE}"
