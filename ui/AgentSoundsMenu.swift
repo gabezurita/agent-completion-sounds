@@ -262,19 +262,105 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildMenu()
     }
 
+    var currentIconStyle: String {
+        get {
+            return UserDefaults.standard.string(forKey: "agentSoundsIconStyle") ?? "bot"
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "agentSoundsIconStyle")
+        }
+    }
+
+    func createCustomBotIcon(isMuted: Bool) -> NSImage {
+        let size = NSSize(width: 25, height: 18)
+        let image = NSImage(size: size, flipped: false) { rect in
+            NSColor.black.setFill()
+            NSColor.black.setStroke()
+            
+            // 1. Robot Head: rounded rectangle
+            let head = NSBezierPath(roundedRect: NSRect(x: 1.0, y: 3.5, width: 9.5, height: 9.5), xRadius: 2.2, yRadius: 2.2)
+            head.lineWidth = 1.3
+            head.stroke()
+            
+            // Antenna
+            let ant = NSBezierPath()
+            ant.move(to: NSPoint(x: 5.75, y: 13.0))
+            ant.line(to: NSPoint(x: 5.75, y: 15.0))
+            ant.lineWidth = 1.1
+            ant.stroke()
+            let antDot = NSBezierPath(ovalIn: NSRect(x: 4.75, y: 14.5, width: 2.0, height: 2.0))
+            antDot.fill()
+            
+            // Eyes
+            let leftEye = NSBezierPath(ovalIn: NSRect(x: 3.0, y: 7.5, width: 1.6, height: 1.6))
+            let rightEye = NSBezierPath(ovalIn: NSRect(x: 6.8, y: 7.5, width: 1.6, height: 1.6))
+            leftEye.fill()
+            rightEye.fill()
+            
+            // 2. Audio Wave Arc
+            let wave = NSBezierPath()
+            wave.appendArc(withCenter: NSPoint(x: 6.5, y: 8.25), radius: 6.8, startAngle: -35, endAngle: 35)
+            wave.lineWidth = 1.3
+            wave.lineCapStyle = .round
+            wave.stroke()
+            
+            if !isMuted {
+                // 3. Completion Checkmark: ✓
+                let check = NSBezierPath()
+                check.move(to: NSPoint(x: 16.5, y: 8.5))
+                check.line(to: NSPoint(x: 18.8, y: 5.5))
+                check.line(to: NSPoint(x: 23.5, y: 12.5))
+                check.lineWidth = 1.6
+                check.lineCapStyle = .round
+                check.lineJoinStyle = .round
+                check.stroke()
+            } else {
+                // 3. Muted state: crisp '✕' mark
+                let xmark = NSBezierPath()
+                xmark.move(to: NSPoint(x: 17.0, y: 6.0))
+                xmark.line(to: NSPoint(x: 22.5, y: 11.5))
+                xmark.move(to: NSPoint(x: 17.0, y: 11.5))
+                xmark.line(to: NSPoint(x: 22.5, y: 6.0))
+                xmark.lineWidth = 1.5
+                xmark.lineCapStyle = .round
+                xmark.stroke()
+            }
+            
+            return true
+        }
+        image.isTemplate = true
+        return image
+    }
+
     func updateStatusIcon() {
         guard let button = statusItem.button else { return }
         let isMuted = SoundManager.shared.isMuted
-        let symbolName = isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill"
 
-        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
-            image.isTemplate = true
-            button.image = image
-            button.title = ""
-        } else {
-            button.image = nil
-            button.title = isMuted ? "🔇" : "🔊"
+        switch currentIconStyle {
+        case "waveform":
+            let symbolName = isMuted ? "waveform.slash" : "waveform"
+            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
+                image.isTemplate = true
+                button.image = image
+                button.title = ""
+                return
+            }
+        case "bell":
+            let symbolName = isMuted ? "bell.slash.fill" : "bell.and.waves.left.and.right.fill"
+            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
+                image.isTemplate = true
+                button.image = image
+                button.title = ""
+                return
+            }
+        default:
+            break
         }
+
+        // Default: Custom Bespoke Agent Bot + Wave + Checkmark
+        let image = createCustomBotIcon(isMuted: isMuted)
+        button.image = image
+        button.title = ""
     }
 
     // MARK: - Menu Construction
@@ -332,7 +418,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         modeMenuItem.submenu = modeSubmenu
         menu.addItem(modeMenuItem)
 
-        // 3. Favorites Submenu
+        // 3. Icon Style Submenu
+        let iconMenuItem = NSMenuItem(title: "Icon Style", action: nil, keyEquivalent: "")
+        let iconSubmenu = NSMenu()
+        let iconStyles: [(id: String, name: String)] = [
+            ("bot", "Agent Bot + Wave + Check (Custom)"),
+            ("waveform", "Audio Waveform"),
+            ("bell", "Chime Bell")
+        ]
+        for style in iconStyles {
+            let item = NSMenuItem(title: style.name, action: #selector(setIconStyleAction(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = style.id
+            item.state = (currentIconStyle == style.id) ? .on : .off
+            iconSubmenu.addItem(item)
+        }
+        iconMenuItem.submenu = iconSubmenu
+        menu.addItem(iconMenuItem)
+
+        // 4. Favorites Submenu
         let favCount = favorites.count
         let totalCount = units.count
         let favMenuItem = NSMenuItem(title: "Favorites (\(favCount)/\(totalCount))", action: nil, keyEquivalent: "")
@@ -444,6 +548,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func setModeAction(_ sender: NSMenuItem) {
         guard let mode = sender.representedObject as? String else { return }
         SoundManager.shared.setMode(mode)
+        rebuildMenu()
+    }
+
+    @objc func setIconStyleAction(_ sender: NSMenuItem) {
+        guard let style = sender.representedObject as? String else { return }
+        currentIconStyle = style
+        updateStatusIcon()
         rebuildMenu()
     }
 
