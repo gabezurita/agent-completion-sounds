@@ -98,8 +98,19 @@ You can customize the mode using:
 ./scripts/sound-mode.sh all          # randomize full pool on every turn
 ./scripts/sound-mode.sh kenney-ui    # lock all sessions to a specific unit (e.g. kenney-ui)
 ./scripts/sound-mode.sh toggle       # cycle through modes
+./scripts/sound-mode.sh mute         # mute completion audio immediately
+./scripts/sound-mode.sh unmute       # unmute completion audio
+./scripts/sound-mode.sh toggle-mute  # flip mute state
+./scripts/sound-mode.sh status       # show mode, mute status, and favorites count
 ./scripts/sound-mode.sh clear        # reset current session sticky choices
 ```
+
+### macOS Menu Bar UI & Alfred Workflow
+
+For visual and keyboard-driven control on macOS:
+
+- **Native Menu Bar App:** Run `./scripts/build-menu-bar-app.sh --link --start` to build and launch `Agent Sounds.app` in your macOS menu bar (~160 KB binary, ~15 MB RAM, 0% CPU idle). Features ambient 🔊/🔇 status, 1-click mute, dynamic favorites checklist, mode switching, and sound import (via Finder, file picker, or curated download).
+- **Alfred 5 Workflow:** Run `./scripts/package-alfred-workflow.sh` and double-click `build/Agent-Completion-Sounds.alfredworkflow` to install. Control everything via `snd` (`snd toggle`, `snd fav`, `snd mode`, `snd test`, `snd open`).
 
 See the [README configuration section](README.md#configuration) for volume, disabling
 playback, and the sounds-root environment variable.

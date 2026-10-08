@@ -17,8 +17,9 @@ VOLUME="${AGENT_COMPLETION_SOUND_VOLUME:-0.45}"
 SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
 ACTIVE_WINDOW_SECS="${AGENT_SOUND_ACTIVE_WINDOW_SECS:-7200}"
 COOLDOWN_SECS="${AGENT_SOUND_COOLDOWN_SECS:-15}"
+DISABLE_FILE="${SOUNDS_ROOT}/.disabled"
 
-if [[ "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ]]; then
+if [[ -f "${DISABLE_FILE}" || "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ]]; then
   printf '%s\n' '{}'
   exit 0
 fi
@@ -38,6 +39,11 @@ done
 # "all" / "turn-all" (randomize full pool every turn),
 # or a specific folder name (e.g. "sc1-valkyrie").
 MODE=$(cat "${MODE_FILE}" 2>/dev/null || echo "session")
+
+if [[ "${MODE}" == "off" || "${MODE}" == "mute" || "${MODE}" == "disabled" ]]; then
+  printf '%s\n' '{}'
+  exit 0
+fi
 
 # Extract conversation/session ID and invocation number from stdin payload if present.
 session_id=""
