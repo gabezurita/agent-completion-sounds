@@ -343,13 +343,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 // MUTED: Sleepy / Resting Face [ - _ - ]
                 let leftEye = NSBezierPath()
                 leftEye.move(to: NSPoint(x: headX + 2.0, y: 8.8))
-                leftEye.line(to: NSPoint(x: headX + 4.6, y: 8.8))
+                leftEye.line(to: NSPoint(x: headX + 3.8, y: 8.8))
                 leftEye.lineWidth = 1.3
                 leftEye.lineCapStyle = .round
                 leftEye.stroke()
                 
                 let rightEye = NSBezierPath()
-                rightEye.move(to: NSPoint(x: headX + 5.9, y: 8.8))
+                rightEye.move(to: NSPoint(x: headX + 6.7, y: 8.8))
                 rightEye.line(to: NSPoint(x: headX + 8.5, y: 8.8))
                 rightEye.lineWidth = 1.3
                 rightEye.lineCapStyle = .round
@@ -435,13 +435,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 // Sleepy Face [ - _ - ]
                 let leftEye = NSBezierPath()
                 leftEye.move(to: NSPoint(x: 2.8, y: 8.8))
-                leftEye.line(to: NSPoint(x: 5.4, y: 8.8))
+                leftEye.line(to: NSPoint(x: 4.6, y: 8.8))
                 leftEye.lineWidth = 1.3
                 leftEye.lineCapStyle = .round
                 leftEye.stroke()
                 
                 let rightEye = NSBezierPath()
-                rightEye.move(to: NSPoint(x: 7.1, y: 8.8))
+                rightEye.move(to: NSPoint(x: 7.9, y: 8.8))
                 rightEye.line(to: NSPoint(x: 9.7, y: 8.8))
                 rightEye.lineWidth = 1.3
                 rightEye.lineCapStyle = .round
