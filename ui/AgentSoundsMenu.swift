@@ -272,55 +272,66 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func createCustomBotIcon(isMuted: Bool) -> NSImage {
-        let size = NSSize(width: 25, height: 18)
+        let size = NSSize(width: 26, height: 18)
         let image = NSImage(size: size, flipped: false) { rect in
             NSColor.black.setFill()
             NSColor.black.setStroke()
             
             // 1. Robot Head: rounded rectangle
-            let head = NSBezierPath(roundedRect: NSRect(x: 1.0, y: 3.5, width: 9.5, height: 9.5), xRadius: 2.2, yRadius: 2.2)
+            let head = NSBezierPath(roundedRect: NSRect(x: 1.0, y: 3.0, width: 10.5, height: 10.5), xRadius: 2.4, yRadius: 2.4)
             head.lineWidth = 1.3
             head.stroke()
             
             // Antenna
             let ant = NSBezierPath()
-            ant.move(to: NSPoint(x: 5.75, y: 13.0))
-            ant.line(to: NSPoint(x: 5.75, y: 15.0))
-            ant.lineWidth = 1.1
+            ant.move(to: NSPoint(x: 6.25, y: 13.5))
+            ant.line(to: NSPoint(x: 6.25, y: 15.5))
+            ant.lineWidth = 1.2
             ant.stroke()
-            let antDot = NSBezierPath(ovalIn: NSRect(x: 4.75, y: 14.5, width: 2.0, height: 2.0))
+            let antDot = NSBezierPath(ovalIn: NSRect(x: 5.25, y: 15.0, width: 2.0, height: 2.0))
             antDot.fill()
             
             // Eyes
-            let leftEye = NSBezierPath(ovalIn: NSRect(x: 3.0, y: 7.5, width: 1.6, height: 1.6))
-            let rightEye = NSBezierPath(ovalIn: NSRect(x: 6.8, y: 7.5, width: 1.6, height: 1.6))
+            let leftEye = NSBezierPath(ovalIn: NSRect(x: 3.4, y: 8.8, width: 1.8, height: 1.8))
+            let rightEye = NSBezierPath(ovalIn: NSRect(x: 7.3, y: 8.8, width: 1.8, height: 1.8))
             leftEye.fill()
             rightEye.fill()
             
-            // 2. Audio Wave Arc
-            let wave = NSBezierPath()
-            wave.appendArc(withCenter: NSPoint(x: 6.5, y: 8.25), radius: 6.8, startAngle: -35, endAngle: 35)
-            wave.lineWidth = 1.3
-            wave.lineCapStyle = .round
-            wave.stroke()
-            
             if !isMuted {
-                // 3. Completion Checkmark: ✓
+                // Open Talking Mouth (speaking slot)
+                let mouth = NSBezierPath(roundedRect: NSRect(x: 4.6, y: 5.2, width: 3.3, height: 2.0), xRadius: 1.0, yRadius: 1.0)
+                mouth.fill()
+                
+                // Sound Wave Equalizer Bars right beside the face
+                let b1 = NSBezierPath(roundedRect: NSRect(x: 13.0, y: 5.5, width: 1.6, height: 5.5), xRadius: 0.8, yRadius: 0.8)
+                b1.fill()
+                let b2 = NSBezierPath(roundedRect: NSRect(x: 15.6, y: 3.5, width: 1.6, height: 9.5), xRadius: 0.8, yRadius: 0.8)
+                b2.fill()
+                
+                // Completion Checkmark
                 let check = NSBezierPath()
-                check.move(to: NSPoint(x: 16.5, y: 8.5))
-                check.line(to: NSPoint(x: 18.8, y: 5.5))
-                check.line(to: NSPoint(x: 23.5, y: 12.5))
+                check.move(to: NSPoint(x: 19.0, y: 7.5))
+                check.line(to: NSPoint(x: 21.0, y: 5.0))
+                check.line(to: NSPoint(x: 24.5, y: 12.0))
                 check.lineWidth = 1.6
                 check.lineCapStyle = .round
                 check.lineJoinStyle = .round
                 check.stroke()
             } else {
-                // 3. Muted state: crisp '✕' mark
+                // Closed/Silent Mouth
+                let mouth = NSBezierPath()
+                mouth.move(to: NSPoint(x: 4.6, y: 5.8))
+                mouth.line(to: NSPoint(x: 7.9, y: 5.8))
+                mouth.lineWidth = 1.2
+                mouth.lineCapStyle = .round
+                mouth.stroke()
+                
+                // Clean Mute '✕'
                 let xmark = NSBezierPath()
-                xmark.move(to: NSPoint(x: 17.0, y: 6.0))
-                xmark.line(to: NSPoint(x: 22.5, y: 11.5))
-                xmark.move(to: NSPoint(x: 17.0, y: 11.5))
-                xmark.line(to: NSPoint(x: 22.5, y: 6.0))
+                xmark.move(to: NSPoint(x: 16.0, y: 5.5))
+                xmark.line(to: NSPoint(x: 22.0, y: 11.5))
+                xmark.move(to: NSPoint(x: 16.0, y: 11.5))
+                xmark.line(to: NSPoint(x: 22.0, y: 5.5))
                 xmark.lineWidth = 1.5
                 xmark.lineCapStyle = .round
                 xmark.stroke()
@@ -332,11 +343,72 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return image
     }
 
+    func createCustomBotWaveIcon(isMuted: Bool) -> NSImage {
+        let size = NSSize(width: 22, height: 18)
+        let image = NSImage(size: size, flipped: false) { rect in
+            NSColor.black.setFill()
+            NSColor.black.setStroke()
+            
+            let head = NSBezierPath(roundedRect: NSRect(x: 1.0, y: 3.0, width: 10.5, height: 10.5), xRadius: 2.4, yRadius: 2.4)
+            head.lineWidth = 1.3
+            head.stroke()
+            
+            let ant = NSBezierPath()
+            ant.move(to: NSPoint(x: 6.25, y: 13.5))
+            ant.line(to: NSPoint(x: 6.25, y: 15.5))
+            ant.lineWidth = 1.2
+            ant.stroke()
+            let antDot = NSBezierPath(ovalIn: NSRect(x: 5.25, y: 15.0, width: 2.0, height: 2.0))
+            antDot.fill()
+            
+            let leftEye = NSBezierPath(ovalIn: NSRect(x: 3.4, y: 8.8, width: 1.8, height: 1.8))
+            let rightEye = NSBezierPath(ovalIn: NSRect(x: 7.3, y: 8.8, width: 1.8, height: 1.8))
+            leftEye.fill()
+            rightEye.fill()
+            
+            if !isMuted {
+                let mouth = NSBezierPath(roundedRect: NSRect(x: 4.6, y: 5.2, width: 3.3, height: 2.0), xRadius: 1.0, yRadius: 1.0)
+                mouth.fill()
+                
+                let b1 = NSBezierPath(roundedRect: NSRect(x: 13.0, y: 5.5, width: 1.8, height: 5.5), xRadius: 0.9, yRadius: 0.9)
+                b1.fill()
+                let b2 = NSBezierPath(roundedRect: NSRect(x: 16.0, y: 3.0, width: 1.8, height: 10.5), xRadius: 0.9, yRadius: 0.9)
+                b2.fill()
+                let b3 = NSBezierPath(roundedRect: NSRect(x: 19.0, y: 4.8, width: 1.8, height: 7.0), xRadius: 0.9, yRadius: 0.9)
+                b3.fill()
+            } else {
+                let mouth = NSBezierPath()
+                mouth.move(to: NSPoint(x: 4.6, y: 5.8))
+                mouth.line(to: NSPoint(x: 7.9, y: 5.8))
+                mouth.lineWidth = 1.2
+                mouth.lineCapStyle = .round
+                mouth.stroke()
+                
+                let xmark = NSBezierPath()
+                xmark.move(to: NSPoint(x: 14.0, y: 5.5))
+                xmark.line(to: NSPoint(x: 19.5, y: 11.0))
+                xmark.move(to: NSPoint(x: 14.0, y: 11.0))
+                xmark.line(to: NSPoint(x: 19.5, y: 5.5))
+                xmark.lineWidth = 1.5
+                xmark.lineCapStyle = .round
+                xmark.stroke()
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
+    }
+
     func updateStatusIcon() {
         guard let button = statusItem.button else { return }
         let isMuted = SoundManager.shared.isMuted
 
         switch currentIconStyle {
+        case "bot-wave":
+            let image = createCustomBotWaveIcon(isMuted: isMuted)
+            button.image = image
+            button.title = ""
+            return
         case "waveform":
             let symbolName = isMuted ? "waveform.slash" : "waveform"
             if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
@@ -357,7 +429,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             break
         }
 
-        // Default: Custom Bespoke Agent Bot + Wave + Checkmark
+        // Default: Custom Talking Bot + Sound Wave + Checkmark
         let image = createCustomBotIcon(isMuted: isMuted)
         button.image = image
         button.title = ""
@@ -422,7 +494,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let iconMenuItem = NSMenuItem(title: "Icon Style", action: nil, keyEquivalent: "")
         let iconSubmenu = NSMenu()
         let iconStyles: [(id: String, name: String)] = [
-            ("bot", "Agent Bot + Wave + Check (Custom)"),
+            ("bot", "Talking Bot + Sound Wave + Check (Custom)"),
+            ("bot-wave", "Talking Bot + Sound Wave Bars"),
             ("waveform", "Audio Waveform"),
             ("bell", "Chime Bell")
         ]
