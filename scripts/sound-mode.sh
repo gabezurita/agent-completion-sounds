@@ -71,7 +71,7 @@ case "$arg" in
     fi
     fav_count=0
     if [[ -f "${SOUNDS_ROOT}/favorites.txt" ]]; then
-      fav_count=$(grep -vE '^[[:space:]]*(#|$)' "${SOUNDS_ROOT}/favorites.txt" 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+      fav_count=$(grep -c -vE '^[[:space:]]*(#|$)' "${SOUNDS_ROOT}/favorites.txt" 2>/dev/null || echo 0)
     fi
     total_units=0
     for d in "${SOUNDS_ROOT}"/*/; do
