@@ -1,6 +1,10 @@
 # Runtime state, not source
 .mode
+.disabled
 favorites.txt
+
+# Build artifacts
+build/
 
 # Custom manifests
 scripts/completion-sound-sets.txt

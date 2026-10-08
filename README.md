@@ -30,7 +30,9 @@ verification, customization, and uninstall instructions.
   JSON on stdin.
 - `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
   shared player's stdin contract.
-- `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes.
+- `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes, with instant mute/unmute control (`mute`, `unmute`, `toggle-mute`, `status`).
+- `ui/AgentSoundsMenu.swift` - ultra-lightweight native macOS Menu Bar status item (~160 KB, ~15 MB RAM, 0% CPU idle) for 1-click mute toggle (SF Symbols 🔊/🔇), dynamic favorites curation, and sound addition.
+- `integrations/alfred/` - Alfred 5 Workflow (`snd` keyword) for keyboard-driven mute toggle, favorites search, and sound management.
 - `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated sound sets (e.g. classical RTS, sci-fi builders, hero shooters) into `~/sounds/`.
 - Cross-platform playback: `afplay` (macOS), falling back to `paplay` or `aplay` (Linux).
 
@@ -150,6 +152,10 @@ download.
 | `soundmode session-all` | `session-all` | Bind 1 random unit from the full pool per conversation |
 | `soundmode favorites` | `favorites` | Randomize across all favorites on every single turn |
 | `soundmode all` | `all` | Randomize across the full pool on every single turn |
+| `soundmode mute` / `off` | `muted` | Mute completion audio immediately (sets `~/sounds/.disabled` sentinel) |
+| `soundmode unmute` / `on`| `active`| Unmute completion audio immediately (removes `~/sounds/.disabled`) |
+| `soundmode toggle-mute` | | Toggle between muted and active |
+| `soundmode status` | | Print human-readable playback mode, mute status, and favorites count |
 | `soundmode <unit-folder>`| `<unit-folder>` | Lock all sessions/turns to a specific unit (e.g. `kenney-ui`) |
 | `soundmode clear` | `clear` / `reset` | Clear all active session sticky bindings (forces re-picking on next turn) |
 | `soundmode toggle` | `toggle` | Cycle between `session` → `favorites` → `all` |
@@ -161,6 +167,41 @@ alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh
 ```
 
 You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="kenney-ui"`.
+
+### macOS Menu Bar App & Alfred 5 Workflow
+
+For a frictionless macOS experience with zero terminal friction, this project includes an ultra-lightweight native Menu Bar Status Item and an Alfred 5 workflow that share the exact same filesystem state (`~/sounds/.disabled`, `~/sounds/.mode`, and `~/sounds/favorites.txt`).
+
+#### 1. Native macOS Menu Bar App (`Agent Sounds.app`)
+- **Resource Footprint:** ~160 KB compiled binary, ~15 MB RAM, 0% CPU idle (pure AppKit, event-driven, zero external dependencies).
+- **Ambient Status:** Menu bar icon displays SF Symbols `speaker.wave.2.fill` (active) or `speaker.slash.fill` (muted).
+- **1-Click Mute Toggle:** Click the status icon to toggle mute on/off instantly without restarting IDEs or agent sessions.
+- **Dynamic Favorites Checklist:** Lists every sound pack subfolder in `~/sounds/` with checkmarks `✓` matching `favorites.txt`. Clicking any pack adds or removes it immediately.
+- **Adding Sounds:**
+  - **Option A (Open in Finder):** Press `Cmd+O` to open `~/sounds/` for direct drag-and-drop.
+  - **Option B (Import Files or Folder):** Press `Cmd+I` for a native macOS file picker. Selecting a folder copies the sound pack; selecting individual audio clips prompts for a pack name and imports them.
+  - **Option C (Download Curated Packs):** Choose any pack from the menu to download royalty-free sets in the background.
+- **Play Test Sound:** Press `Cmd+T` to preview a completion sound immediately.
+
+**Build and Run:**
+```bash
+./scripts/build-menu-bar-app.sh --link --start
+```
+*(Optional: add `--install-launchd` to launch automatically upon login).*
+
+#### 2. Alfred 5 Workflow (`Agent-Completion-Sounds.alfredworkflow`)
+Control completion sounds directly from your keyboard using Alfred 5:
+- Type `snd` to view current status, mute/unmute, and quick actions.
+- Type `snd fav <name>` to search sound packs and toggle favorite status with Enter.
+- Type `snd mode <session|favorites|all>` to switch playback mode.
+- Type `snd test` to trigger a test sound.
+- Type `snd open` to open `~/sounds` in Finder.
+
+**Package and Install:**
+```bash
+./scripts/package-alfred-workflow.sh
+open "build/Agent-Completion-Sounds.alfredworkflow"
+```
 
 ### Agent Identity (Sticky Sessions & Unique Voices)
 
