@@ -282,6 +282,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let headW: CGFloat = 10.5
             let headH: CGFloat = 10.5
             let centerX = headX + headW / 2.0 // 12.75
+            let centerY = headY + headH / 2.0 // 8.25
             
             // 1. Robot Head (stationary in both active & muted states)
             let head = NSBezierPath(roundedRect: NSRect(x: headX, y: headY, width: headW, height: headH), xRadius: 2.4, yRadius: 2.4)
@@ -324,11 +325,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 smile.lineCapStyle = .round
                 smile.stroke()
                 
-                // Sound Wave Bars on LEFT (radiating outward from head)
-                let bOuter = NSBezierPath(roundedRect: NSRect(x: 1.5, y: 5.5, width: 1.6, height: 5.5), xRadius: 0.8, yRadius: 0.8)
-                bOuter.fill()
-                let bInner = NSBezierPath(roundedRect: NSRect(x: 4.1, y: 3.5, width: 1.6, height: 9.5), xRadius: 0.8, yRadius: 0.8)
-                bInner.fill()
+                // 3 Curved Sound Wave Arcs on LEFT: ((( (radiating from bot outward to left)
+                let arcCenter = NSPoint(x: headX + 0.5, y: centerY)
+                
+                // Small arc (closest to bot):
+                let w1 = NSBezierPath()
+                w1.appendArc(withCenter: arcCenter, radius: 2.3, startAngle: 130, endAngle: 230, clockwise: false)
+                w1.lineWidth = 1.3
+                w1.lineCapStyle = .round
+                w1.stroke()
+                
+                // Medium arc (mid):
+                let w2 = NSBezierPath()
+                w2.appendArc(withCenter: arcCenter, radius: 4.3, startAngle: 135, endAngle: 225, clockwise: false)
+                w2.lineWidth = 1.3
+                w2.lineCapStyle = .round
+                w2.stroke()
+                
+                // Big arc (outer left):
+                let w3 = NSBezierPath()
+                w3.appendArc(withCenter: arcCenter, radius: 6.3, startAngle: 140, endAngle: 220, clockwise: false)
+                w3.lineWidth = 1.3
+                w3.lineCapStyle = .round
+                w3.stroke()
                 
                 // Completion Checkmark on RIGHT
                 let check = NSBezierPath()
