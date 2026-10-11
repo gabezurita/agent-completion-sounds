@@ -7,9 +7,9 @@ class SoundManager {
 
     var soundsRoot: URL {
         if let envRoot = ProcessInfo.processInfo.environment["AGENT_SOUNDS_ROOT"], !envRoot.isEmpty {
-            return URL(fileURLWithPath: envRoot)
+            return URL(fileURLWithPath: envRoot).resolvingSymlinksInPath()
         }
-        return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("sounds")
+        return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("sounds").resolvingSymlinksInPath()
     }
 
     var disabledFileURL: URL {
@@ -109,8 +109,9 @@ class SoundManager {
     }
 
     func selectAllFavorites() {
-        let all = Set(availableUnits())
-        saveFavorites(all)
+        let units = availableUnits()
+        guard !units.isEmpty else { return }
+        saveFavorites(Set(units))
     }
 
     func clearAllFavorites() {
@@ -739,7 +740,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func openFinderAction() {
         let root = SoundManager.shared.soundsRoot
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        NSWorkspace.shared.open(root)
+        let userSounds = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("sounds")
+        if FileManager.default.fileExists(atPath: userSounds.path) {
+            NSWorkspace.shared.open(userSounds)
+        } else {
+            NSWorkspace.shared.open(root)
+        }
     }
 
     @objc func importSoundsAction() {
@@ -758,27 +764,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
             let sm = SoundManager.shared
             let fileManager = FileManager.default
+            let resolvedRoot = sm.soundsRoot
 
             // Case 1: A single directory was chosen
             if urls.count == 1, (try? urls[0].resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
-                let folderURL = urls[0]
-                let dest = sm.soundsRoot.appendingPathComponent(folderURL.lastPathComponent)
-                do {
-                    if fileManager.fileExists(atPath: dest.path) {
-                        // Merge contents
-                        let files = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-                        for f in files {
-                            let target = dest.appendingPathComponent(f.lastPathComponent)
-                            if !fileManager.fileExists(atPath: target.path) {
-                                try fileManager.copyItem(at: f, to: target)
-                            }
+                let folderURL = urls[0].resolvingSymlinksInPath()
+
+                if folderURL.path == resolvedRoot.path {
+                    showAlert(title: "Already in ~/sounds", message: "The selected folder is already your active sounds directory.")
+                    return
+                }
+
+                let audioExtensions = Set(["wav", "mp3", "aif", "aiff", "m4a", "ogg", "aac", "flac"])
+                let contents = (try? fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])) ?? []
+                let directAudioFiles = contents.filter { audioExtensions.contains($0.pathExtension.lowercased()) }
+                let subDirectories = contents.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true && $0.lastPathComponent != "sounds" && $0.lastPathComponent != "scratch" }
+
+                if !subDirectories.isEmpty && directAudioFiles.isEmpty {
+                    // Folder is a collection of sound packs (e.g. backup of ~/sounds)
+                    var importedPacks = 0
+                    for packDir in subDirectories {
+                        let targetDir = resolvedRoot.appendingPathComponent(packDir.lastPathComponent)
+                        if copyOrMergePackDirectory(from: packDir, to: targetDir) {
+                            importedPacks += 1
                         }
-                    } else {
-                        try fileManager.copyItem(at: folderURL, to: dest)
                     }
-                    showNotification(title: "Sound Pack Imported", message: "Imported folder '\(folderURL.lastPathComponent)' into ~/sounds.")
-                } catch {
-                    showAlert(title: "Import Failed", message: error.localizedDescription)
+                    showNotification(title: "Sound Packs Imported", message: "Imported \(importedPacks) sound pack(s) into ~/sounds.")
+                } else {
+                    let packName = (folderURL.lastPathComponent == "sounds") ? "custom-sounds" : folderURL.lastPathComponent
+                    let targetDir = resolvedRoot.appendingPathComponent(packName)
+                    if copyOrMergePackDirectory(from: folderURL, to: targetDir) {
+                        showNotification(title: "Sound Pack Imported", message: "Imported folder '\(packName)' into ~/sounds.")
+                    } else {
+                        showAlert(title: "Import Failed", message: "Could not import sound pack.")
+                    }
                 }
                 rebuildMenu()
                 return
@@ -797,7 +816,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if alert.runModal() == .alertFirstButtonReturn {
                 let packName = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !packName.isEmpty else { return }
-                let destDir = sm.soundsRoot.appendingPathComponent(packName)
+                let destDir = resolvedRoot.appendingPathComponent(packName)
                 try? fileManager.createDirectory(at: destDir, withIntermediateDirectories: true)
 
                 var copied = 0
@@ -813,6 +832,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 showNotification(title: "Sounds Imported", message: "Added \(copied) clip(s) to ~/sounds/\(packName).")
                 rebuildMenu()
             }
+        }
+    }
+
+    @discardableResult
+    private func copyOrMergePackDirectory(from src: URL, to dst: URL) -> Bool {
+        let fileManager = FileManager.default
+        let audioExtensions = Set(["wav", "mp3", "aif", "aiff", "m4a", "ogg", "aac", "flac"])
+        do {
+            try fileManager.createDirectory(at: dst, withIntermediateDirectories: true)
+            let files = try fileManager.contentsOfDirectory(at: src, includingPropertiesForKeys: nil)
+            for f in files {
+                if audioExtensions.contains(f.pathExtension.lowercased()) {
+                    let target = dst.appendingPathComponent(f.lastPathComponent)
+                    if !fileManager.fileExists(atPath: target.path) {
+                        try? fileManager.copyItem(at: f, to: target)
+                    }
+                }
+            }
+            return true
+        } catch {
+            return false
         }
     }
 
