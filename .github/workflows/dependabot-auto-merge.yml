@@ -1,0 +1,100 @@
+name: Dependabot Auto-merge
+on: pull_request_target
+
+permissions:
+  pull-requests: write
+  contents: write
+  workflows: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+
+      - name: Bash syntax check
+        run: |
+          for f in scripts/*.sh tests/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Validate JSON snippets
+        run: |
+          for f in hooks/*.json.example hooks/*.json.snippet; do
+            python3 -m json.tool "$f" > /dev/null
+          done
+
+      - name: Validate TOML snippets
+        run: |
+          python3 -c 'import pathlib, tomllib; files=list(pathlib.Path("hooks").glob("*.toml.snippet")); assert files; configs=[tomllib.loads(path.read_text()) for path in files]; assert all(config.get("notify") for config in configs)'
+
+      - name: Test adapters
+        run: |
+          for f in tests/*.sh; do
+            bash "$f"
+          done
+
+      - name: Check shell files are executable
+        run: |
+          for f in scripts/*.sh tests/*.sh; do
+            test -x "$f" || { echo "not executable: $f"; exit 1; }
+          done
+
+  dependabot:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ always() && github.actor == 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify on test failure
+        if: ${{ needs.test.result == 'failure' }}
+        run: |
+          gh pr edit "$PR_URL" --repo "${{ github.repository }}" --add-assignee gabezurita
+          gh pr comment "$PR_URL" --repo "${{ github.repository }}" --body "❌ Tests failed in CI. Assigned @gabezurita for manual investigation."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Auto-approve and merge
+        if: ${{ needs.test.result == 'success' }}
+        id: merge
+        run: |
+          gh pr review --approve --body "Auto-approved: passing CI test suite and verification" "$PR_URL" --repo "${{ github.repository }}" || true
+          
+          PR_TITLE=$(gh pr view "$PR_URL" --repo "${{ github.repository }}" --json title --jq .title)
+          PR_BODY=$(gh pr view "$PR_URL" --repo "${{ github.repository }}" --json body --jq .body)
+          
+          COAUTH="Co-authored-by: Gabriel Zurita <gabezurita@gmail.com>"
+          MERGE_BODY="${PR_BODY}"$'\n\n'"${COAUTH}"
+          
+          gh pr merge --auto --squash \
+            --subject "$PR_TITLE" \
+            --body "$MERGE_BODY" \
+            "$PR_URL" --repo "${{ github.repository }}" || \
+          gh pr merge --squash \
+            --subject "$PR_TITLE" \
+            --body "$MERGE_BODY" \
+            "$PR_URL" --repo "${{ github.repository }}"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Notify on merge failure
+        if: ${{ needs.test.result == 'success' && failure() }}
+        run: |
+          gh pr edit "$PR_URL" --repo "${{ github.repository }}" --add-assignee gabezurita
+          gh pr comment "$PR_URL" --repo "${{ github.repository }}" --body "❌ Auto-merge failed. Assigned @gabezurita for manual review."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT || secrets.GITHUB_TOKEN }}
