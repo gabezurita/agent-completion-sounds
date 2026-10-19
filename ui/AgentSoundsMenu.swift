@@ -409,12 +409,11 @@ class QuotaManager {
         let cdStr = (resetCountdown != nil && !resetCountdown!.isEmpty) ? "resets in \(resetCountdown!)" : "ready"
         let line = "  \(dot) \(paddedName) \(pctStr)  [\(blocks)]  \(cdStr)"
 
-        let color = statusColor(remainingPct: remainingPct)
         return NSAttributedString(
             string: line,
             attributes: [
                 .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular),
-                .foregroundColor: color
+                .foregroundColor: NSColor.labelColor
             ]
         )
     }
