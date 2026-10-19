@@ -465,6 +465,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var menu: NSMenu!
 
+    static func makeInformationalMenuItem(attributed: NSAttributedString, height: CGFloat = 20, leftPadding: CGFloat = 14) -> NSMenuItem {
+        let item = NSMenuItem()
+        let field = NSTextField(labelWithAttributedString: attributed)
+        field.isEditable = false
+        field.isSelectable = false
+        field.drawsBackground = false
+        field.isBordered = false
+
+        let fit = field.fittingSize
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: fit.width + leftPadding + 14, height: height))
+        container.autoresizingMask = [.width]
+        field.frame = NSRect(x: leftPadding, y: (height - fit.height) / 2, width: fit.width, height: fit.height)
+        container.addSubview(field)
+
+        item.view = container
+        return item
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         menu = NSMenu()
@@ -737,22 +755,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             timeStr = " (Synced \(timePart) UTC)"
         }
 
-        let quotaHeader = NSMenuItem(title: "AIQuotas\(timeStr)", action: #selector(noopAction), keyEquivalent: "")
-        quotaHeader.attributedTitle = NSAttributedString(
+        let quotaHeaderAttr = NSAttributedString(
             string: "AIQuotas\(timeStr)",
             attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
         )
-        quotaHeader.target = self
-        menu.addItem(quotaHeader)
+        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: quotaHeaderAttr, height: 22, leftPadding: 14))
 
         let colHeaderStr = "      " + "QUOTA BUCKET".padding(toLength: 20, withPad: " ", startingAt: 0) + " " + "LEFT".padding(toLength: 4, withPad: " ", startingAt: 0) + "   " + "PROGRESS".padding(toLength: 12, withPad: " ", startingAt: 0) + "  " + "RESETS IN"
-        let colHeaderItem = NSMenuItem(title: colHeaderStr, action: #selector(noopAction), keyEquivalent: "")
-        colHeaderItem.attributedTitle = NSAttributedString(
+        let colHeaderAttr = NSAttributedString(
             string: colHeaderStr,
             attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .bold), .foregroundColor: NSColor.secondaryLabelColor]
         )
-        colHeaderItem.target = self
-        menu.addItem(colHeaderItem)
+        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: colHeaderAttr, height: 18, leftPadding: 14))
 
         menu.addItem(NSMenuItem.separator())
 
@@ -760,13 +774,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let cursor = providers["cursor"] as? [String: Any], cursor["status"] as? String == "ok" {
             let countdown = cursor["reset_countdown"] as? String
             let cdStr = (countdown != nil && !countdown!.isEmpty) ? " · Resets in \(countdown!)" : ""
-            let cursorHeader = NSMenuItem(title: "Cursor Pro\(cdStr)", action: #selector(noopAction), keyEquivalent: "")
-            cursorHeader.attributedTitle = NSAttributedString(
+            let cursorHeaderAttr = NSAttributedString(
                 string: "Cursor Pro\(cdStr)",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            cursorHeader.target = self
-            menu.addItem(cursorHeader)
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: cursorHeaderAttr, height: 20, leftPadding: 14))
 
             if let models = cursor["models"] as? [String: Any] {
                 for mkey in ["cursor_models", "other_models"] {
@@ -776,10 +788,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let rawLabel = m["label"] as? String ?? mkey
                     let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
                     let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: countdown)
-                    let item = NSMenuItem(title: rowAttr.string, action: #selector(noopAction), keyEquivalent: "")
-                    item.attributedTitle = rowAttr
-                    item.target = self
-                    menu.addItem(item)
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: rowAttr, height: 20, leftPadding: 14))
                 }
             }
 
@@ -787,13 +796,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 let remUsd = spend["remaining_usd"] as? Double ?? 0.0
                 let limUsd = spend["limit_usd"] as? Double ?? 0.0
                 let spendStr = String(format: "    Spend Limit Runway: $%.2f / $%.2f", remUsd, limUsd)
-                let spendItem = NSMenuItem(title: spendStr, action: #selector(noopAction), keyEquivalent: "")
-                spendItem.attributedTitle = NSAttributedString(
+                let spendAttr = NSAttributedString(
                     string: spendStr,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                spendItem.target = self
-                menu.addItem(spendItem)
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: spendAttr, height: 18, leftPadding: 14))
             }
 
             let settingsItem = NSMenuItem(title: "    Open Cursor Settings…", action: #selector(openURLAction(_:)), keyEquivalent: "")
@@ -810,13 +817,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Antigravity Section
         if let agy = providers["antigravity"] as? [String: Any], agy["status"] as? String == "ok" {
-            let agyHeader = NSMenuItem(title: "Google Antigravity (agy CLI)", action: #selector(noopAction), keyEquivalent: "")
-            agyHeader.attributedTitle = NSAttributedString(
+            let agyHeaderAttr = NSAttributedString(
                 string: "Google Antigravity (agy CLI)",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            agyHeader.target = self
-            menu.addItem(agyHeader)
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: agyHeaderAttr, height: 20, leftPadding: 14))
 
             let bucketOrder = ["gemini_weekly", "gemini_5h", "3p_weekly", "3p_5h", "gemini_argon_wtu_weekly"]
             if let buckets = agy["buckets"] as? [String: Any] {
@@ -828,10 +833,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
                     let cd = b["reset_countdown"] as? String
                     let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
-                    let item = NSMenuItem(title: rowAttr.string, action: #selector(noopAction), keyEquivalent: "")
-                    item.attributedTitle = rowAttr
-                    item.target = self
-                    menu.addItem(item)
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: rowAttr, height: 20, leftPadding: 14))
                 }
             }
             menu.addItem(NSMenuItem.separator())
@@ -840,13 +842,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // OpenAI Codex Section
         if let cdx = providers["codex"] as? [String: Any], cdx["status"] as? String == "ok" {
             let planStr = cdx["plan_type"] as? String ?? (cdx["auth_mode"] as? String ?? "ChatGPT")
-            let cdxHeader = NSMenuItem(title: "OpenAI Codex (\(planStr))", action: #selector(noopAction), keyEquivalent: "")
-            cdxHeader.attributedTitle = NSAttributedString(
+            let cdxHeaderAttr = NSAttributedString(
                 string: "OpenAI Codex (\(planStr))",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            cdxHeader.target = self
-            menu.addItem(cdxHeader)
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: cdxHeaderAttr, height: 20, leftPadding: 14))
 
             if let rl = cdx["rate_limits"] as? [String: Any] {
                 for rkey in ["five_hour", "weekly"] {
@@ -857,22 +857,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
                     let cd = r["reset_countdown"] as? String
                     let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
-                    let item = NSMenuItem(title: rowAttr.string, action: #selector(noopAction), keyEquivalent: "")
-                    item.attributedTitle = rowAttr
-                    item.target = self
-                    menu.addItem(item)
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: rowAttr, height: 20, leftPadding: 14))
                 }
             }
 
             if let credits = cdx["reset_credits_available"] as? Int, credits > 0 {
                 let credStr = "    Reset Credits Available: \(credits) credits"
-                let credItem = NSMenuItem(title: credStr, action: #selector(noopAction), keyEquivalent: "")
-                credItem.attributedTitle = NSAttributedString(
+                let credAttr = NSAttributedString(
                     string: credStr,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                credItem.target = self
-                menu.addItem(credItem)
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: credAttr, height: 18, leftPadding: 14))
             }
 
             let threads = cdx["total_threads"] as? Int ?? 0
@@ -882,34 +877,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 numFormatter.numberStyle = .decimal
                 let tokenStr = numFormatter.string(from: NSNumber(value: tokens)) ?? "\(tokens)"
 
-                let threadItem = NSMenuItem(title: "    Active Session Threads: \(threads)", action: #selector(noopAction), keyEquivalent: "")
-                threadItem.attributedTitle = NSAttributedString(
+                let threadAttr = NSAttributedString(
                     string: "    Active Session Threads: \(threads)",
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                threadItem.target = self
-                menu.addItem(threadItem)
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: threadAttr, height: 18, leftPadding: 14))
 
-                let tokenItem = NSMenuItem(title: "    Tracked Lifetime Tokens: \(tokenStr)", action: #selector(noopAction), keyEquivalent: "")
-                tokenItem.attributedTitle = NSAttributedString(
+                let tokenAttr = NSAttributedString(
                     string: "    Tracked Lifetime Tokens: \(tokenStr)",
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                tokenItem.target = self
-                menu.addItem(tokenItem)
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: tokenAttr, height: 18, leftPadding: 14))
             }
             menu.addItem(NSMenuItem.separator())
         }
 
         // Claude Code Section
         if let claude = providers["claude"] as? [String: Any], claude["status"] as? String == "ok" {
-            let claudeHeader = NSMenuItem(title: "Claude Code (Local Telemetry)", action: #selector(noopAction), keyEquivalent: "")
-            claudeHeader.attributedTitle = NSAttributedString(
+            let claudeHeaderAttr = NSAttributedString(
                 string: "Claude Code (Local Telemetry)",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            claudeHeader.target = self
-            menu.addItem(claudeHeader)
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: claudeHeaderAttr, height: 20, leftPadding: 14))
 
             let sessions = claude["total_sessions"] as? Int ?? 0
             let messages = claude["total_messages"] as? Int ?? 0
@@ -917,30 +906,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             numFormatter.numberStyle = .decimal
             let msgStr = numFormatter.string(from: NSNumber(value: messages)) ?? "\(messages)"
 
-            let sessItem = NSMenuItem(title: "    Lifetime Sessions: \(sessions) sessions", action: #selector(noopAction), keyEquivalent: "")
-            sessItem.attributedTitle = NSAttributedString(
+            let sessAttr = NSAttributedString(
                 string: "    Lifetime Sessions: \(sessions) sessions",
                 attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
             )
-            sessItem.target = self
-            menu.addItem(sessItem)
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: sessAttr, height: 18, leftPadding: 14))
 
-            let msgItem = NSMenuItem(title: "    Total Messages Recorded: \(msgStr)", action: #selector(noopAction), keyEquivalent: "")
-            msgItem.attributedTitle = NSAttributedString(
+            let msgAttr = NSAttributedString(
                 string: "    Total Messages Recorded: \(msgStr)",
                 attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
             )
-            msgItem.target = self
-            menu.addItem(msgItem)
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: msgAttr, height: 18, leftPadding: 14))
 
             if let today = claude["today"] as? [String: Any], let todayCount = today["message_count"] as? Int, todayCount > 0 {
-                let todayItem = NSMenuItem(title: "    Today's Messages: \(todayCount)", action: #selector(noopAction), keyEquivalent: "")
-                todayItem.attributedTitle = NSAttributedString(
+                let todayAttr = NSAttributedString(
                     string: "    Today's Messages: \(todayCount)",
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                todayItem.target = self
-                menu.addItem(todayItem)
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: todayAttr, height: 18, leftPadding: 14))
             }
 
             menu.addItem(NSMenuItem.separator())
@@ -965,13 +948,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let units = sm.availableUnits()
         let favorites = sm.loadFavorites()
 
-        let soundsHeader = NSMenuItem(title: "Agent Sounds", action: #selector(noopAction), keyEquivalent: "")
-        soundsHeader.attributedTitle = NSAttributedString(
+        let soundsHeaderAttr = NSAttributedString(
             string: "Agent Sounds",
             attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
         )
-        soundsHeader.target = self
-        menu.addItem(soundsHeader)
+        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: soundsHeaderAttr, height: 22, leftPadding: 14))
 
         let toggleItem = NSMenuItem(title: "Sounds Enabled", action: #selector(toggleSoundsAction), keyEquivalent: "")
         toggleItem.target = self
