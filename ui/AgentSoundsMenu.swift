@@ -445,7 +445,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     var menuBarQuotaStyle: String {
         get {
-            return UserDefaults.standard.string(forKey: "menuBarQuotaStyle") ?? "none"
+            return UserDefaults.standard.string(forKey: "menuBarQuotaStyle") ?? "primary"
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "menuBarQuotaStyle")
@@ -488,52 +488,79 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let antDot = NSBezierPath(ovalIn: NSRect(x: centerX - 1.0, y: headY + headH + 1.5, width: 2.0, height: 2.0))
             antDot.fill()
             
-            // 2. Neutral Face: round dot eyes [ •  • ] and straight mouth [ ⎯ ]
-            let leftEye = NSBezierPath(ovalIn: NSRect(x: headX + 2.3, y: 7.8, width: 2.0, height: 2.2))
-            leftEye.fill()
-            
-            let rightEye = NSBezierPath(ovalIn: NSRect(x: headX + 6.2, y: 7.8, width: 2.0, height: 2.2))
-            rightEye.fill()
-            
-            let mouth = NSBezierPath()
-            mouth.move(to: NSPoint(x: headX + 3.4, y: 5.6))
-            mouth.line(to: NSPoint(x: headX + 7.1, y: 5.6))
-            mouth.lineWidth = 1.2
-            mouth.lineCapStyle = .round
-            mouth.stroke()
-            
-            // 3. Sound Wave Arcs on LEFT: (((
-            let arcCenter = NSPoint(x: headX + 0.5, y: centerY)
-            
-            // Small arc:
-            let w1 = NSBezierPath()
-            w1.appendArc(withCenter: arcCenter, radius: 2.3, startAngle: 130, endAngle: 230, clockwise: false)
-            w1.lineWidth = 1.3
-            w1.lineCapStyle = .round
-            w1.stroke()
-            
-            // Medium arc:
-            let w2 = NSBezierPath()
-            w2.appendArc(withCenter: arcCenter, radius: 4.3, startAngle: 135, endAngle: 225, clockwise: false)
-            w2.lineWidth = 1.3
-            w2.lineCapStyle = .round
-            w2.stroke()
-            
-            // Big arc:
-            let w3 = NSBezierPath()
-            w3.appendArc(withCenter: arcCenter, radius: 6.3, startAngle: 140, endAngle: 220, clockwise: false)
-            w3.lineWidth = 1.3
-            w3.lineCapStyle = .round
-            w3.stroke()
-            
-            if isMuted {
-                // Diagonal slash across the sound waves
-                let slash = NSBezierPath()
-                slash.move(to: NSPoint(x: 0.8, y: 4.2))
-                slash.line(to: NSPoint(x: 6.8, y: 12.3))
-                slash.lineWidth = 1.3
-                slash.lineCapStyle = .round
-                slash.stroke()
+            if !isMuted {
+                // ACTIVE: Cheerful Eyes [ ^ ‿ ^ ]
+                let leftEye = NSBezierPath()
+                leftEye.move(to: NSPoint(x: headX + 2.0, y: 8.8))
+                leftEye.line(to: NSPoint(x: headX + 3.3, y: 10.5))
+                leftEye.line(to: NSPoint(x: headX + 4.6, y: 8.8))
+                leftEye.lineWidth = 1.3
+                leftEye.lineCapStyle = .round
+                leftEye.lineJoinStyle = .round
+                leftEye.stroke()
+                
+                let rightEye = NSBezierPath()
+                rightEye.move(to: NSPoint(x: headX + 5.9, y: 8.8))
+                rightEye.line(to: NSPoint(x: headX + 7.2, y: 10.5))
+                rightEye.line(to: NSPoint(x: headX + 8.5, y: 8.8))
+                rightEye.lineWidth = 1.3
+                rightEye.lineCapStyle = .round
+                rightEye.lineJoinStyle = .round
+                rightEye.stroke()
+                
+                // Cheerful Smile Arc (clear breathing room above bottom border)
+                let smile = NSBezierPath()
+                smile.appendArc(withCenter: NSPoint(x: centerX, y: 6.9), radius: 1.5, startAngle: 200, endAngle: 340, clockwise: false)
+                smile.lineWidth = 1.2
+                smile.lineCapStyle = .round
+                smile.stroke()
+                
+                // 3 Curved Sound Wave Arcs on LEFT: ((( (radiating from bot outward to left)
+                let arcCenter = NSPoint(x: headX + 0.5, y: centerY)
+                
+                // Small arc (closest to bot):
+                let w1 = NSBezierPath()
+                w1.appendArc(withCenter: arcCenter, radius: 2.3, startAngle: 130, endAngle: 230, clockwise: false)
+                w1.lineWidth = 1.3
+                w1.lineCapStyle = .round
+                w1.stroke()
+                
+                // Medium arc (mid):
+                let w2 = NSBezierPath()
+                w2.appendArc(withCenter: arcCenter, radius: 4.3, startAngle: 135, endAngle: 225, clockwise: false)
+                w2.lineWidth = 1.3
+                w2.lineCapStyle = .round
+                w2.stroke()
+                
+                // Big arc (outer left):
+                let w3 = NSBezierPath()
+                w3.appendArc(withCenter: arcCenter, radius: 6.3, startAngle: 140, endAngle: 220, clockwise: false)
+                w3.lineWidth = 1.3
+                w3.lineCapStyle = .round
+                w3.stroke()
+            } else {
+                // MUTED: Sleepy / Resting Face [ - _ - ]
+                let leftEye = NSBezierPath()
+                leftEye.move(to: NSPoint(x: headX + 2.0, y: 8.8))
+                leftEye.line(to: NSPoint(x: headX + 3.8, y: 8.8))
+                leftEye.lineWidth = 1.3
+                leftEye.lineCapStyle = .round
+                leftEye.stroke()
+                
+                let rightEye = NSBezierPath()
+                rightEye.move(to: NSPoint(x: headX + 6.7, y: 8.8))
+                rightEye.line(to: NSPoint(x: headX + 8.5, y: 8.8))
+                rightEye.lineWidth = 1.3
+                rightEye.lineCapStyle = .round
+                rightEye.stroke()
+                
+                // Quiet straight mouth
+                let mouth = NSBezierPath()
+                mouth.move(to: NSPoint(x: headX + 3.6, y: 6.2))
+                mouth.line(to: NSPoint(x: headX + 6.9, y: 6.2))
+                mouth.lineWidth = 1.2
+                mouth.lineCapStyle = .round
+                mouth.stroke()
             }
             
             return true
@@ -560,36 +587,61 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let antDot = NSBezierPath(ovalIn: NSRect(x: 5.25, y: 15.0, width: 2.0, height: 2.0))
             antDot.fill()
             
-            // Neutral Face: round dot eyes [ •  • ] and straight mouth [ ⎯ ]
-            let leftEye = NSBezierPath(ovalIn: NSRect(x: 3.3, y: 7.8, width: 2.0, height: 2.2))
-            leftEye.fill()
-            
-            let rightEye = NSBezierPath(ovalIn: NSRect(x: 7.2, y: 7.8, width: 2.0, height: 2.2))
-            rightEye.fill()
-            
-            let mouth = NSBezierPath()
-            mouth.move(to: NSPoint(x: 4.4, y: 5.6))
-            mouth.line(to: NSPoint(x: 8.1, y: 5.6))
-            mouth.lineWidth = 1.2
-            mouth.lineCapStyle = .round
-            mouth.stroke()
-            
-            // Wave bars on right
-            let b1 = NSBezierPath(roundedRect: NSRect(x: 13.0, y: 5.5, width: 1.8, height: 5.5), xRadius: 0.9, yRadius: 0.9)
-            b1.fill()
-            let b2 = NSBezierPath(roundedRect: NSRect(x: 16.0, y: 3.0, width: 1.8, height: 10.5), xRadius: 0.9, yRadius: 0.9)
-            b2.fill()
-            let b3 = NSBezierPath(roundedRect: NSRect(x: 19.0, y: 4.8, width: 1.8, height: 7.0), xRadius: 0.9, yRadius: 0.9)
-            b3.fill()
-            
-            if isMuted {
-                // Diagonal slash across the wave bars
-                let slash = NSBezierPath()
-                slash.move(to: NSPoint(x: 12.0, y: 3.5))
-                slash.line(to: NSPoint(x: 21.0, y: 12.5))
-                slash.lineWidth = 1.3
-                slash.lineCapStyle = .round
-                slash.stroke()
+            if !isMuted {
+                // Happy Cheerful Eyes: ^  ^
+                let leftEye = NSBezierPath()
+                leftEye.move(to: NSPoint(x: 2.8, y: 8.8))
+                leftEye.line(to: NSPoint(x: 4.1, y: 10.5))
+                leftEye.line(to: NSPoint(x: 5.4, y: 8.8))
+                leftEye.lineWidth = 1.3
+                leftEye.lineCapStyle = .round
+                leftEye.lineJoinStyle = .round
+                leftEye.stroke()
+                
+                let rightEye = NSBezierPath()
+                rightEye.move(to: NSPoint(x: 7.1, y: 8.8))
+                rightEye.line(to: NSPoint(x: 8.4, y: 10.5))
+                rightEye.line(to: NSPoint(x: 9.7, y: 8.8))
+                rightEye.lineWidth = 1.3
+                rightEye.lineCapStyle = .round
+                rightEye.lineJoinStyle = .round
+                rightEye.stroke()
+                
+                // Cheerful Smile Arc
+                let smile = NSBezierPath()
+                smile.appendArc(withCenter: NSPoint(x: 6.25, y: 6.9), radius: 1.5, startAngle: 200, endAngle: 340, clockwise: false)
+                smile.lineWidth = 1.2
+                smile.lineCapStyle = .round
+                smile.stroke()
+                
+                let b1 = NSBezierPath(roundedRect: NSRect(x: 13.0, y: 5.5, width: 1.8, height: 5.5), xRadius: 0.9, yRadius: 0.9)
+                b1.fill()
+                let b2 = NSBezierPath(roundedRect: NSRect(x: 16.0, y: 3.0, width: 1.8, height: 10.5), xRadius: 0.9, yRadius: 0.9)
+                b2.fill()
+                let b3 = NSBezierPath(roundedRect: NSRect(x: 19.0, y: 4.8, width: 1.8, height: 7.0), xRadius: 0.9, yRadius: 0.9)
+                b3.fill()
+            } else {
+                // Sleepy Face [ - _ - ]
+                let leftEye = NSBezierPath()
+                leftEye.move(to: NSPoint(x: 2.8, y: 8.8))
+                leftEye.line(to: NSPoint(x: 4.6, y: 8.8))
+                leftEye.lineWidth = 1.3
+                leftEye.lineCapStyle = .round
+                leftEye.stroke()
+                
+                let rightEye = NSBezierPath()
+                rightEye.move(to: NSPoint(x: 7.9, y: 8.8))
+                rightEye.line(to: NSPoint(x: 9.7, y: 8.8))
+                rightEye.lineWidth = 1.3
+                rightEye.lineCapStyle = .round
+                rightEye.stroke()
+                
+                let mouth = NSBezierPath()
+                mouth.move(to: NSPoint(x: 4.6, y: 6.2))
+                mouth.line(to: NSPoint(x: 7.9, y: 6.2))
+                mouth.lineWidth = 1.2
+                mouth.lineCapStyle = .round
+                mouth.stroke()
             }
             return true
         }
@@ -622,7 +674,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let image = createCustomBotIcon(isMuted: isMuted)
             button.image = image
         }
-        button.title = ""
+
+        if menuBarQuotaStyle != "none", let summary = QuotaManager.shared.menuBarSummary(style: menuBarQuotaStyle) {
+            button.title = " \(summary)"
+        } else {
+            button.title = ""
+        }
     }
 
     // MARK: - Menu Construction
@@ -928,6 +985,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         iconMenuItem.submenu = iconSubmenu
         menu.addItem(iconMenuItem)
+
+        // Menu Bar Quota Title Submenu
+        let titleMenuItem = NSMenuItem(title: "Menu Bar Quota Display", action: nil, keyEquivalent: "")
+        let titleSubmenu = NSMenu()
+        let titleStyles: [(id: String, name: String)] = [
+            ("primary", "Primary Quota (e.g. Cur: 77%)"),
+            ("compact", "Compact All (Cur | AGY | Cdx)"),
+            ("none", "Icon Only (No Quota Text)")
+        ]
+        for style in titleStyles {
+            let item = NSMenuItem(title: style.name, action: #selector(setMenuBarQuotaStyleAction(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = style.id
+            item.state = (menuBarQuotaStyle == style.id) ? .on : .off
+            titleSubmenu.addItem(item)
+        }
+        titleMenuItem.submenu = titleSubmenu
+        menu.addItem(titleMenuItem)
 
         // Favorites Submenu
         let favCount = favorites.count
