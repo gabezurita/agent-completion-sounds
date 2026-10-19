@@ -158,9 +158,10 @@ class SoundManager {
             let task = Process()
             task.executableURL = URL(fileURLWithPath: script)
             task.arguments = ["stop"]
-            // Allow test sound even if muted globally
+            // Allow test sound even if muted globally or within turn cooldown
             var env = ProcessInfo.processInfo.environment
             env["AGENT_COMPLETION_SOUND_DISABLE"] = "0"
+            env["AGENT_SOUND_COOLDOWN_SECS"] = "0"
             task.environment = env
             let inPipe = Pipe()
             task.standardInput = inPipe

@@ -170,4 +170,17 @@ if [[ "${plays}" -ne 1 ]]; then
 fi
 echo "PASS: Legacy stop hook works and throttles rapid duplicates"
 
+
+echo "=== Test 5: Cooldown of 0 allows rapid successive playbacks (manual test sounds) ==="
+: > "${PLAY_LOG}"
+run_player "sess-manual-test" "stop" '{"conversationId": "sess-manual-test"}' 0
+run_player "sess-manual-test" "stop" '{"conversationId": "sess-manual-test"}' 0
+plays=$(wait_for_plays 2)
+if [[ "${plays}" -ne 2 ]]; then
+  echo "FAIL: Expected 2 plays with cooldown=0, got ${plays}" >&2
+  exit 1
+fi
+echo "PASS: Cooldown=0 allows immediate successive playbacks"
+
 echo "cooldown-and-throttle-test: ALL PASS"
+
