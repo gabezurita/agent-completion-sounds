@@ -465,6 +465,8 @@ class QuotaManager {
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var menu: NSMenu!
+    private var modeSubmenu: NSMenu?
+    private var modeExplanationField: NSTextField?
 
     static func makeInformationalMenuItem(attributed: NSAttributedString, height: CGFloat = 20, leftPadding: CGFloat = 14) -> NSMenuItem {
         let item = NSMenuItem()
@@ -730,6 +732,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildMenu()
     }
 
+    func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
+        if menu == self.modeSubmenu {
+            if let modeId = item?.representedObject as? String {
+                modeExplanationField?.stringValue = modeExplanation(for: modeId)
+            } else if item == nil {
+                modeExplanationField?.stringValue = modeExplanation(for: SoundManager.shared.currentMode)
+            }
+        }
+    }
+
     func rebuildMenu() {
         menu.removeAllItems()
 
@@ -953,12 +965,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Playback Mode Submenu
         let modeMenuItem = NSMenuItem(title: "Playback Mode: \(modeDisplayName(currentMode))", action: nil, keyEquivalent: "")
         let modeSubmenu = NSMenu()
+        modeSubmenu.delegate = self
+        self.modeSubmenu = modeSubmenu
 
         let modes: [(id: String, name: String, desc: String)] = [
-            ("session", "Session (Sticky Favorite)", "Sticky favorite unit per conversation"),
-            ("session-all", "Session All (Sticky Full Pool)", "Sticky unit from full pool per conversation"),
-            ("favorites", "Favorites (Random Turn)", "Random favorite unit every turn"),
-            ("all", "All (Random Full Pool)", "Random unit from full pool every turn")
+            ("session", "Session (Sticky Favorite)", "Sticky favorite voice per conversation"),
+            ("session-all", "Session All (Sticky Full Pool)", "Sticky voice from full pool per conversation"),
+            ("favorites", "Favorites (Random Turn)", "Random favorite clip every turn"),
+            ("all", "All (Random Full Pool)", "Random clip from full pool every turn")
         ]
 
         for m in modes {
@@ -976,6 +990,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             lockedItem.state = .on
             modeSubmenu.addItem(lockedItem)
         }
+
+        modeSubmenu.addItem(NSMenuItem.separator())
+
+        // Footer container for dynamic hover explanation
+        let footerItem = NSMenuItem()
+        let explainField = NSTextField(labelWithString: modeExplanation(for: currentMode))
+        explainField.font = NSFont.systemFont(ofSize: 11)
+        explainField.textColor = NSColor.secondaryLabelColor
+        explainField.isEditable = false
+        explainField.isSelectable = false
+        explainField.drawsBackground = false
+        explainField.isBordered = false
+        explainField.lineBreakMode = .byWordWrapping
+        explainField.maximumNumberOfLines = 2
+        explainField.preferredMaxLayoutWidth = 260
+
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 288, height: 38))
+        container.autoresizingMask = [.width]
+        explainField.frame = NSRect(x: 14, y: 4, width: 260, height: 30)
+        container.addSubview(explainField)
+        footerItem.view = container
+
+        self.modeExplanationField = explainField
+        modeSubmenu.addItem(footerItem)
 
         modeMenuItem.submenu = modeSubmenu
         menu.addItem(modeMenuItem)
@@ -1092,6 +1130,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case "favorites": return "Favorites (Turn)"
         case "all": return "All (Turn)"
         default: return id
+        }
+    }
+
+    private func modeExplanation(for id: String) -> String {
+        switch id {
+        case "session":
+            return "Locks each conversation to a unique favorite voice so you can tell active agents apart by ear."
+        case "session-all":
+            return "Locks each conversation to a unique voice drawn from all installed sound packs."
+        case "favorites":
+            return "Plays a random sound clip from your favorites every turn (no conversation stickiness)."
+        case "all":
+            return "Plays a random sound clip from all installed sound packs every turn (maximum variety)."
+        default:
+            return "Completions play sounds exclusively from the '\(id)' sound pack."
         }
     }
 
