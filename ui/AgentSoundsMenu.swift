@@ -370,14 +370,14 @@ class QuotaManager {
     }
 
     static func statusDot(remainingPct: Int) -> String {
-        if remainingPct <= 5 { return "🔴" }
-        if remainingPct <= 20 { return "🟠" }
+        if remainingPct <= 15 { return "🔴" }
+        if remainingPct <= 40 { return "🟠" }
         return "🟢"
     }
 
     static func statusColor(remainingPct: Int) -> NSColor {
-        if remainingPct <= 5 { return NSColor.systemRed }
-        if remainingPct <= 20 { return NSColor.systemOrange }
+        if remainingPct <= 15 { return NSColor.systemRed }
+        if remainingPct <= 40 { return NSColor.systemOrange }
         return NSColor.labelColor
     }
 
