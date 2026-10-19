@@ -788,18 +788,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if let spend = cursor["spend_limit"] as? [String: Any] {
                 let remUsd = spend["remaining_usd"] as? Double ?? 0.0
                 let limUsd = spend["limit_usd"] as? Double ?? 0.0
-                let spendStr = String(format: "  💳 Spend Limit Runway: $%.2f / $%.2f", remUsd, limUsd)
+                let spendStr = String(format: "    Spend Limit Runway: $%.2f / $%.2f", remUsd, limUsd)
                 let spendItem = NSMenuItem(title: spendStr, action: #selector(openURLAction(_:)), keyEquivalent: "")
                 spendItem.attributedTitle = NSAttributedString(
                     string: spendStr,
-                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor]
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
                 spendItem.representedObject = "cursor://settings"
                 spendItem.target = self
                 menu.addItem(spendItem)
             }
 
-            let settingsItem = NSMenuItem(title: "  ⚙️ Open Cursor Settings", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            let settingsItem = NSMenuItem(title: "    Open Cursor Settings…", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            settingsItem.attributedTitle = NSAttributedString(
+                string: "    Open Cursor Settings…",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
             settingsItem.representedObject = "cursor://settings"
             settingsItem.target = self
             menu.addItem(settingsItem)
@@ -866,11 +870,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
 
             if let credits = cdx["reset_credits_available"] as? Int, credits > 0 {
-                let credStr = "  🎁 Reset Credits Available: \(credits) credits"
+                let credStr = "    Reset Credits Available: \(credits) credits"
                 let credItem = NSMenuItem(title: credStr, action: #selector(openURLAction(_:)), keyEquivalent: "")
                 credItem.attributedTitle = NSAttributedString(
                     string: credStr,
-                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor]
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
                 credItem.representedObject = "https://chatgpt.com"
                 credItem.target = self
@@ -884,13 +888,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 numFormatter.numberStyle = .decimal
                 let tokenStr = numFormatter.string(from: NSNumber(value: tokens)) ?? "\(tokens)"
 
-                let threadItem = NSMenuItem(title: "  🧵 Active Session Threads: \(threads)", action: #selector(noopAction), keyEquivalent: "")
-                threadItem.attributedTitle = NSAttributedString(string: "  🧵 Active Session Threads: \(threads)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+                let threadItem = NSMenuItem(title: "    Active Session Threads: \(threads)", action: #selector(noopAction), keyEquivalent: "")
+                threadItem.attributedTitle = NSAttributedString(
+                    string: "    Active Session Threads: \(threads)",
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                )
                 threadItem.target = self
                 menu.addItem(threadItem)
 
-                let tokenItem = NSMenuItem(title: "  📊 Tracked Lifetime Tokens: \(tokenStr)", action: #selector(noopAction), keyEquivalent: "")
-                tokenItem.attributedTitle = NSAttributedString(string: "  📊 Tracked Lifetime Tokens: \(tokenStr)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+                let tokenItem = NSMenuItem(title: "    Tracked Lifetime Tokens: \(tokenStr)", action: #selector(noopAction), keyEquivalent: "")
+                tokenItem.attributedTitle = NSAttributedString(
+                    string: "    Tracked Lifetime Tokens: \(tokenStr)",
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                )
                 tokenItem.target = self
                 menu.addItem(tokenItem)
             }
@@ -914,21 +924,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             numFormatter.numberStyle = .decimal
             let msgStr = numFormatter.string(from: NSNumber(value: messages)) ?? "\(messages)"
 
-            let sessItem = NSMenuItem(title: "  📂 Lifetime Sessions: \(sessions) sessions", action: #selector(openURLAction(_:)), keyEquivalent: "")
-            sessItem.attributedTitle = NSAttributedString(string: "  📂 Lifetime Sessions: \(sessions) sessions", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+            let sessItem = NSMenuItem(title: "    Lifetime Sessions: \(sessions) sessions", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            sessItem.attributedTitle = NSAttributedString(
+                string: "    Lifetime Sessions: \(sessions) sessions",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
             sessItem.representedObject = "https://claude.ai"
             sessItem.target = self
             menu.addItem(sessItem)
 
-            let msgItem = NSMenuItem(title: "  💬 Total Messages Recorded: \(msgStr)", action: #selector(openURLAction(_:)), keyEquivalent: "")
-            msgItem.attributedTitle = NSAttributedString(string: "  💬 Total Messages Recorded: \(msgStr)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+            let msgItem = NSMenuItem(title: "    Total Messages Recorded: \(msgStr)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            msgItem.attributedTitle = NSAttributedString(
+                string: "    Total Messages Recorded: \(msgStr)",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
             msgItem.representedObject = "https://claude.ai"
             msgItem.target = self
             menu.addItem(msgItem)
 
             if let today = claude["today"] as? [String: Any], let todayCount = today["message_count"] as? Int, todayCount > 0 {
-                let todayItem = NSMenuItem(title: "  ✨ Today's Messages: \(todayCount)", action: #selector(openURLAction(_:)), keyEquivalent: "")
-                todayItem.attributedTitle = NSAttributedString(string: "  ✨ Today's Messages: \(todayCount)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+                let todayItem = NSMenuItem(title: "    Today's Messages: \(todayCount)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+                todayItem.attributedTitle = NSAttributedString(
+                    string: "    Today's Messages: \(todayCount)",
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                )
                 todayItem.representedObject = "https://claude.ai"
                 todayItem.target = self
                 menu.addItem(todayItem)
@@ -938,12 +957,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         // Quota Actions
-        let webItem = NSMenuItem(title: "🌐 Open Web Dashboard (localhost:3333)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+        let webItem = NSMenuItem(title: "Open Web Dashboard (localhost:3333)", action: #selector(openURLAction(_:)), keyEquivalent: "")
         webItem.representedObject = "http://localhost:3333"
         webItem.target = self
         menu.addItem(webItem)
 
-        let refreshItem = NSMenuItem(title: "🔄 Force Refresh All Quotas", action: #selector(refreshQuotasAction), keyEquivalent: "r")
+        let refreshItem = NSMenuItem(title: "Force Refresh All Quotas", action: #selector(refreshQuotasAction), keyEquivalent: "r")
         refreshItem.target = self
         menu.addItem(refreshItem)
 
