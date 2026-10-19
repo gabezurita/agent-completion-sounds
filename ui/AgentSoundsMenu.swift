@@ -715,20 +715,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case "bot-wave":
             let image = createCustomBotWaveIcon(isMuted: isMuted)
             button.image = image
-        case "waveform":
-            let symbolName = isMuted ? "waveform.slash" : "waveform"
-            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
-                image.isTemplate = true
-                button.image = image
-            }
-        case "bell":
-            let symbolName = isMuted ? "bell.slash.fill" : "bell.and.waves.left.and.right.fill"
-            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
-                image.isTemplate = true
-                button.image = image
-            }
         default:
-            // Default: Custom Talking Bot + Sound Wave
+            // Default: Custom Talking Bot + Sound Wave Arcs
             let image = createCustomBotIcon(isMuted: isMuted)
             button.image = image
         }
@@ -996,10 +984,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let iconMenuItem = NSMenuItem(title: "Icon Style", action: nil, keyEquivalent: "")
         let iconSubmenu = NSMenu()
         let iconStyles: [(id: String, name: String)] = [
-            ("bot", "Talking Bot + Sound Wave + Check (Custom)"),
-            ("bot-wave", "Talking Bot + Sound Wave Bars"),
-            ("waveform", "Audio Waveform"),
-            ("bell", "Chime Bell")
+            ("bot", "Talking Bot + Sound Wave Arcs"),
+            ("bot-wave", "Talking Bot + Sound Wave Bars")
         ]
         for style in iconStyles {
             let item = NSMenuItem(title: style.name, action: #selector(setIconStyleAction(_:)), keyEquivalent: "")
