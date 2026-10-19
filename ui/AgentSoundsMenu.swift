@@ -728,6 +728,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Menu Construction
 
     func menuWillOpen(_ menu: NSMenu) {
+        guard menu == self.menu else { return }
         updateStatusIcon()
         rebuildMenu()
     }
