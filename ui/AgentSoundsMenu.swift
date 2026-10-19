@@ -378,7 +378,7 @@ class QuotaManager {
     static func statusColor(remainingPct: Int) -> NSColor {
         if remainingPct <= 15 { return NSColor.systemRed }
         if remainingPct <= 40 { return NSColor.systemOrange }
-        return NSColor.labelColor
+        return NSColor.systemGreen
     }
 
     static func cleanBucketLabel(_ label: String) -> String {
@@ -405,17 +405,50 @@ class QuotaManager {
     ) -> NSAttributedString {
         let paddedName = name.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
         let pctStr = String(format: "%3d%%", remainingPct)
-        let blocks = renderBlocks(percent: remainingPct, length: 10)
+        let clamped = max(0, min(100, remainingPct))
+        let filledCount = Int(round(Double(clamped) / 100.0 * 10.0))
+        let emptyCount = 10 - filledCount
         let cdStr = (resetCountdown != nil && !resetCountdown!.isEmpty) ? "resets in \(resetCountdown!)" : "ready"
-        let line = "  \(dot) \(paddedName) \(pctStr)  [\(blocks)]  \(cdStr)"
 
-        return NSAttributedString(
-            string: line,
-            attributes: [
-                .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular),
-                .foregroundColor: NSColor.labelColor
-            ]
-        )
+        let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+        let result = NSMutableAttributedString()
+
+        // 1. Dot, Name, and Percentage (Crisp high-contrast labelColor)
+        result.append(NSAttributedString(
+            string: "  \(dot) \(paddedName) \(pctStr)  ",
+            attributes: [.font: font, .foregroundColor: NSColor.labelColor]
+        ))
+
+        // 2. Opening bracket
+        result.append(NSAttributedString(
+            string: "[",
+            attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]
+        ))
+
+        // 3. Filled meter blocks (Green / Orange / Red)
+        if filledCount > 0 {
+            let barColor = statusColor(remainingPct: remainingPct)
+            result.append(NSAttributedString(
+                string: String(repeating: "█", count: filledCount),
+                attributes: [.font: font, .foregroundColor: barColor]
+            ))
+        }
+
+        // 4. Empty meter track (Subtle dim)
+        if emptyCount > 0 {
+            result.append(NSAttributedString(
+                string: String(repeating: "░", count: emptyCount),
+                attributes: [.font: font, .foregroundColor: NSColor.tertiaryLabelColor]
+            ))
+        }
+
+        // 5. Closing bracket and Countdown
+        result.append(NSAttributedString(
+            string: "]  \(cdStr)",
+            attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]
+        ))
+
+        return result
     }
 }
 
