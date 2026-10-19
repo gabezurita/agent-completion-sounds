@@ -247,6 +247,179 @@ class SoundManager {
     }
 }
 
+// MARK: - Quota Management & Metrics
+
+class QuotaManager {
+    static let shared = QuotaManager()
+
+    let cachePath = "/tmp/ai_quota_collector_cache.json"
+    private var isFetching = false
+    private var lastFetchTime: Date?
+
+    var collectorScriptPath: String {
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".agents/scripts/ai_quota_collector.py").path
+    }
+
+    func loadCachedData() -> [String: Any]? {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: cachePath),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: cachePath)),
+              let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+            return nil
+        }
+        return json
+    }
+
+    func getQuotaData(completion: (([String: Any]?) -> Void)? = nil) -> [String: Any]? {
+        let cached = loadCachedData()
+        let shouldRefresh: Bool
+        if let last = lastFetchTime {
+            shouldRefresh = Date().timeIntervalSince(last) > 60
+        } else if let attrs = try? FileManager.default.attributesOfItem(atPath: cachePath),
+                  let modDate = attrs[.modificationDate] as? Date {
+            shouldRefresh = Date().timeIntervalSince(modDate) > 60
+        } else {
+            shouldRefresh = true
+        }
+
+        if shouldRefresh && !isFetching {
+            refreshInBackground(completion: completion)
+        }
+        return cached
+    }
+
+    func refreshInBackground(completion: (([String: Any]?) -> Void)? = nil) {
+        guard !isFetching else { return }
+        isFetching = true
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            let script = self.collectorScriptPath
+            if FileManager.default.fileExists(atPath: script) {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+                process.arguments = ["python3", script, "--json"]
+                try? process.run()
+                process.waitUntilExit()
+            }
+            let fresh = self.loadCachedData()
+            DispatchQueue.main.async {
+                self.isFetching = false
+                self.lastFetchTime = Date()
+                completion?(fresh)
+            }
+        }
+    }
+
+    func menuBarSummary(style: String) -> String? {
+        guard let data = loadCachedData(),
+              let providers = data["providers"] as? [String: Any] else {
+            return nil
+        }
+        var curRem: Int?
+        var agyRem: Int?
+        var cdxRem: Int?
+
+        if let cur = providers["cursor"] as? [String: Any],
+           cur["status"] as? String == "ok",
+           let models = cur["models"] as? [String: Any],
+           let curModels = models["cursor_models"] as? [String: Any],
+           let rem = curModels["remaining_percent"] as? Int {
+            curRem = rem
+        }
+
+        if let agy = providers["antigravity"] as? [String: Any],
+           agy["status"] as? String == "ok",
+           let buckets = agy["buckets"] as? [String: Any],
+           let g5h = buckets["gemini_5h"] as? [String: Any],
+           let rem = g5h["remaining_percent"] as? Int {
+            agyRem = rem
+        }
+
+        if let cdx = providers["codex"] as? [String: Any],
+           cdx["status"] as? String == "ok",
+           let rl = cdx["rate_limits"] as? [String: Any],
+           let f5h = rl["five_hour"] as? [String: Any],
+           let rem = f5h["remaining_percent"] as? Int {
+            cdxRem = rem
+        }
+
+        switch style {
+        case "primary":
+            if let cur = curRem { return "Cur: \(cur)%" }
+            if let agy = agyRem { return "AGY: \(agy)%" }
+            if let cdx = cdxRem { return "Cdx: \(cdx)%" }
+            return nil
+        case "compact":
+            var parts: [String] = []
+            if let cur = curRem { parts.append("Cur: \(cur)%") }
+            if let agy = agyRem { parts.append("AGY: \(agy)%") }
+            if let cdx = cdxRem { parts.append("Cdx: \(cdx)%") }
+            return parts.isEmpty ? nil : parts.joined(separator: " | ")
+        default:
+            return nil
+        }
+    }
+
+    static func renderBlocks(percent: Int, length: Int = 10) -> String {
+        let clamped = max(0, min(100, percent))
+        let filled = Int(round(Double(clamped) / 100.0 * Double(length)))
+        let empty = length - filled
+        return String(repeating: "█", count: filled) + String(repeating: "░", count: empty)
+    }
+
+    static func statusDot(remainingPct: Int) -> String {
+        if remainingPct <= 5 { return "🔴" }
+        if remainingPct <= 20 { return "🟠" }
+        return "🟢"
+    }
+
+    static func statusColor(remainingPct: Int) -> NSColor {
+        if remainingPct <= 5 { return NSColor.systemRed }
+        if remainingPct <= 20 { return NSColor.systemOrange }
+        return NSColor.labelColor
+    }
+
+    static func cleanBucketLabel(_ label: String) -> String {
+        switch label {
+        case "Gemini Models (Five Hour Limit Remaining)": return "Gemini 5-Hour"
+        case "Gemini Models (Weekly Limit Remaining)": return "Gemini Weekly"
+        case "Claude and GPT models (Five Hour Limit Remaining)": return "Claude & GPT 5-Hour"
+        case "Claude and GPT models (Weekly Limit Remaining)": return "Claude & GPT Weekly"
+        case "Gemini 4 Argon (Gemini 4 Argon Weekly Limit)": return "Gemini 4 Argon"
+        case "Cursor Models (Grok / Composer)": return "Cursor Fast Models"
+        case "Other Models (API / Claude)": return "API / Other Models"
+        case "Five-Hour Limit": return "Codex 5-Hour"
+        case "Weekly Limit": return "Codex Weekly"
+        default: return label
+        }
+    }
+
+    static func formatTableRow(
+        dot: String,
+        name: String,
+        remainingPct: Int,
+        resetCountdown: String?,
+        nameWidth: Int = 20
+    ) -> NSAttributedString {
+        let paddedName = name.padding(toLength: nameWidth, withPad: " ", startingAt: 0)
+        let pctStr = String(format: "%3d%%", remainingPct)
+        let blocks = renderBlocks(percent: remainingPct, length: 10)
+        let cdStr = (resetCountdown != nil && !resetCountdown!.isEmpty) ? "resets in \(resetCountdown!)" : "ready"
+        let line = "  \(dot) \(paddedName) \(pctStr)  [\(blocks)]  \(cdStr)"
+
+        let color = statusColor(remainingPct: remainingPct)
+        return NSAttributedString(
+            string: line,
+            attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular),
+                .foregroundColor: color
+            ]
+        )
+    }
+}
+
 // MARK: - Application Delegate & Status Item
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -261,6 +434,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         updateStatusIcon()
         rebuildMenu()
+
+        // Background timer to refresh quota data and menu bar title every 60s
+        Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            QuotaManager.shared.refreshInBackground { _ in
+                self?.updateStatusIcon()
+            }
+        }
+    }
+
+    var menuBarQuotaStyle: String {
+        get {
+            return UserDefaults.standard.string(forKey: "menuBarQuotaStyle") ?? "primary"
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "menuBarQuotaStyle")
+        }
     }
 
     var currentIconStyle: String {
@@ -497,32 +686,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case "bot-wave":
             let image = createCustomBotWaveIcon(isMuted: isMuted)
             button.image = image
-            button.title = ""
-            return
         case "waveform":
             let symbolName = isMuted ? "waveform.slash" : "waveform"
             if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
                 image.isTemplate = true
                 button.image = image
-                button.title = ""
-                return
             }
         case "bell":
             let symbolName = isMuted ? "bell.slash.fill" : "bell.and.waves.left.and.right.fill"
             if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isMuted ? "Sounds Muted" : "Sounds Active") {
                 image.isTemplate = true
                 button.image = image
-                button.title = ""
-                return
             }
         default:
-            break
+            // Default: Custom Talking Bot + Sound Wave + Checkmark
+            let image = createCustomBotIcon(isMuted: isMuted)
+            button.image = image
         }
 
-        // Default: Custom Talking Bot + Sound Wave + Checkmark
-        let image = createCustomBotIcon(isMuted: isMuted)
-        button.image = image
-        button.title = ""
+        if menuBarQuotaStyle != "none", let summary = QuotaManager.shared.menuBarSummary(style: menuBarQuotaStyle) {
+            button.title = " \(summary)"
+        } else {
+            button.title = ""
+        }
     }
 
     // MARK: - Menu Construction
@@ -535,13 +721,244 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func rebuildMenu() {
         menu.removeAllItems()
 
+        // MARK: ── 1. AI Quotas Section ──
+        let payload = QuotaManager.shared.getQuotaData()
+        let providers = payload?["providers"] as? [String: Any] ?? [:]
+        
+        var timeStr = ""
+        if let collected = payload?["collected_at"] as? String, collected.count >= 16 {
+            let prefix16 = String(collected.prefix(16))
+            let timePart = String(prefix16.suffix(5))
+            timeStr = " (Synced \(timePart) UTC)"
+        }
+
+        let quotaHeader = NSMenuItem(title: "AIQuotas\(timeStr)", action: #selector(noopAction), keyEquivalent: "")
+        quotaHeader.attributedTitle = NSAttributedString(
+            string: "AIQuotas\(timeStr)",
+            attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
+        )
+        quotaHeader.target = self
+        menu.addItem(quotaHeader)
+
+        let colHeaderStr = "      " + "QUOTA BUCKET".padding(toLength: 20, withPad: " ", startingAt: 0) + " " + "LEFT".padding(toLength: 4, withPad: " ", startingAt: 0) + "   " + "PROGRESS".padding(toLength: 12, withPad: " ", startingAt: 0) + "  " + "RESETS IN"
+        let colHeaderItem = NSMenuItem(title: colHeaderStr, action: #selector(noopAction), keyEquivalent: "")
+        colHeaderItem.attributedTitle = NSAttributedString(
+            string: colHeaderStr,
+            attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .bold), .foregroundColor: NSColor.secondaryLabelColor]
+        )
+        colHeaderItem.target = self
+        menu.addItem(colHeaderItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // Cursor Section
+        if let cursor = providers["cursor"] as? [String: Any], cursor["status"] as? String == "ok" {
+            let countdown = cursor["reset_countdown"] as? String
+            let cdStr = (countdown != nil && !countdown!.isEmpty) ? " · Resets in \(countdown!)" : ""
+            let cursorHeader = NSMenuItem(title: "Cursor Pro\(cdStr)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            cursorHeader.attributedTitle = NSAttributedString(
+                string: "Cursor Pro\(cdStr)",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            cursorHeader.representedObject = "cursor://settings"
+            cursorHeader.target = self
+            menu.addItem(cursorHeader)
+
+            if let models = cursor["models"] as? [String: Any] {
+                for mkey in ["cursor_models", "other_models"] {
+                    guard let m = models[mkey] as? [String: Any] else { continue }
+                    let rem = m["remaining_percent"] as? Int ?? 0
+                    let dot = QuotaManager.statusDot(remainingPct: rem)
+                    let rawLabel = m["label"] as? String ?? mkey
+                    let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
+                    let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: countdown)
+                    let item = NSMenuItem(title: rowAttr.string, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                    item.attributedTitle = rowAttr
+                    item.representedObject = "cursor://settings"
+                    item.target = self
+                    menu.addItem(item)
+                }
+            }
+
+            if let spend = cursor["spend_limit"] as? [String: Any] {
+                let remUsd = spend["remaining_usd"] as? Double ?? 0.0
+                let limUsd = spend["limit_usd"] as? Double ?? 0.0
+                let spendStr = String(format: "  💳 Spend Limit Runway: $%.2f / $%.2f", remUsd, limUsd)
+                let spendItem = NSMenuItem(title: spendStr, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                spendItem.attributedTitle = NSAttributedString(
+                    string: spendStr,
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor]
+                )
+                spendItem.representedObject = "cursor://settings"
+                spendItem.target = self
+                menu.addItem(spendItem)
+            }
+
+            let settingsItem = NSMenuItem(title: "  ⚙️ Open Cursor Settings", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            settingsItem.representedObject = "cursor://settings"
+            settingsItem.target = self
+            menu.addItem(settingsItem)
+
+            menu.addItem(NSMenuItem.separator())
+        }
+
+        // Antigravity Section
+        if let agy = providers["antigravity"] as? [String: Any], agy["status"] as? String == "ok" {
+            let agyHeader = NSMenuItem(title: "Google Antigravity (agy CLI)", action: #selector(noopAction), keyEquivalent: "")
+            agyHeader.attributedTitle = NSAttributedString(
+                string: "Google Antigravity (agy CLI)",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            agyHeader.target = self
+            menu.addItem(agyHeader)
+
+            let bucketOrder = ["gemini_weekly", "gemini_5h", "3p_weekly", "3p_5h", "gemini_argon_wtu_weekly"]
+            if let buckets = agy["buckets"] as? [String: Any] {
+                for bkey in bucketOrder {
+                    guard let b = buckets[bkey] as? [String: Any] else { continue }
+                    let rem = b["remaining_percent"] as? Int ?? 0
+                    let dot = QuotaManager.statusDot(remainingPct: rem)
+                    let rawLabel = b["label"] as? String ?? bkey
+                    let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
+                    let cd = b["reset_countdown"] as? String
+                    let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
+                    let item = NSMenuItem(title: rowAttr.string, action: #selector(noopAction), keyEquivalent: "")
+                    item.attributedTitle = rowAttr
+                    item.target = self
+                    menu.addItem(item)
+                }
+            }
+            menu.addItem(NSMenuItem.separator())
+        }
+
+        // OpenAI Codex Section
+        if let cdx = providers["codex"] as? [String: Any], cdx["status"] as? String == "ok" {
+            let planStr = cdx["plan_type"] as? String ?? (cdx["auth_mode"] as? String ?? "ChatGPT")
+            let cdxHeader = NSMenuItem(title: "OpenAI Codex (\(planStr))", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            cdxHeader.attributedTitle = NSAttributedString(
+                string: "OpenAI Codex (\(planStr))",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            cdxHeader.representedObject = "https://chatgpt.com"
+            cdxHeader.target = self
+            menu.addItem(cdxHeader)
+
+            if let rl = cdx["rate_limits"] as? [String: Any] {
+                for rkey in ["five_hour", "weekly"] {
+                    guard let r = rl[rkey] as? [String: Any] else { continue }
+                    let rem = r["remaining_percent"] as? Int ?? 0
+                    let dot = QuotaManager.statusDot(remainingPct: rem)
+                    let rawLabel = r["label"] as? String ?? rkey
+                    let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
+                    let cd = r["reset_countdown"] as? String
+                    let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
+                    let item = NSMenuItem(title: rowAttr.string, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                    item.attributedTitle = rowAttr
+                    item.representedObject = "https://chatgpt.com"
+                    item.target = self
+                    menu.addItem(item)
+                }
+            }
+
+            if let credits = cdx["reset_credits_available"] as? Int, credits > 0 {
+                let credStr = "  🎁 Reset Credits Available: \(credits) credits"
+                let credItem = NSMenuItem(title: credStr, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                credItem.attributedTitle = NSAttributedString(
+                    string: credStr,
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor]
+                )
+                credItem.representedObject = "https://chatgpt.com"
+                credItem.target = self
+                menu.addItem(credItem)
+            }
+
+            let threads = cdx["total_threads"] as? Int ?? 0
+            let tokens = cdx["lifetime_tokens_recorded"] as? Int ?? 0
+            if threads > 0 || tokens > 0 {
+                let numFormatter = NumberFormatter()
+                numFormatter.numberStyle = .decimal
+                let tokenStr = numFormatter.string(from: NSNumber(value: tokens)) ?? "\(tokens)"
+
+                let threadItem = NSMenuItem(title: "  🧵 Active Session Threads: \(threads)", action: #selector(noopAction), keyEquivalent: "")
+                threadItem.attributedTitle = NSAttributedString(string: "  🧵 Active Session Threads: \(threads)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+                threadItem.target = self
+                menu.addItem(threadItem)
+
+                let tokenItem = NSMenuItem(title: "  📊 Tracked Lifetime Tokens: \(tokenStr)", action: #selector(noopAction), keyEquivalent: "")
+                tokenItem.attributedTitle = NSAttributedString(string: "  📊 Tracked Lifetime Tokens: \(tokenStr)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+                tokenItem.target = self
+                menu.addItem(tokenItem)
+            }
+            menu.addItem(NSMenuItem.separator())
+        }
+
+        // Claude Code Section
+        if let claude = providers["claude"] as? [String: Any], claude["status"] as? String == "ok" {
+            let claudeHeader = NSMenuItem(title: "Claude Code (Local Telemetry)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            claudeHeader.attributedTitle = NSAttributedString(
+                string: "Claude Code (Local Telemetry)",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            claudeHeader.representedObject = "https://claude.ai"
+            claudeHeader.target = self
+            menu.addItem(claudeHeader)
+
+            let sessions = claude["total_sessions"] as? Int ?? 0
+            let messages = claude["total_messages"] as? Int ?? 0
+            let numFormatter = NumberFormatter()
+            numFormatter.numberStyle = .decimal
+            let msgStr = numFormatter.string(from: NSNumber(value: messages)) ?? "\(messages)"
+
+            let sessItem = NSMenuItem(title: "  📂 Lifetime Sessions: \(sessions) sessions", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            sessItem.attributedTitle = NSAttributedString(string: "  📂 Lifetime Sessions: \(sessions) sessions", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+            sessItem.representedObject = "https://claude.ai"
+            sessItem.target = self
+            menu.addItem(sessItem)
+
+            let msgItem = NSMenuItem(title: "  💬 Total Messages Recorded: \(msgStr)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            msgItem.attributedTitle = NSAttributedString(string: "  💬 Total Messages Recorded: \(msgStr)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+            msgItem.representedObject = "https://claude.ai"
+            msgItem.target = self
+            menu.addItem(msgItem)
+
+            if let today = claude["today"] as? [String: Any], let todayCount = today["message_count"] as? Int, todayCount > 0 {
+                let todayItem = NSMenuItem(title: "  ✨ Today's Messages: \(todayCount)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+                todayItem.attributedTitle = NSAttributedString(string: "  ✨ Today's Messages: \(todayCount)", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.labelColor])
+                todayItem.representedObject = "https://claude.ai"
+                todayItem.target = self
+                menu.addItem(todayItem)
+            }
+
+            menu.addItem(NSMenuItem.separator())
+        }
+
+        // Quota Actions
+        let webItem = NSMenuItem(title: "🌐 Open Web Dashboard (localhost:3333)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+        webItem.representedObject = "http://localhost:3333"
+        webItem.target = self
+        menu.addItem(webItem)
+
+        let refreshItem = NSMenuItem(title: "🔄 Force Refresh All Quotas", action: #selector(refreshQuotasAction), keyEquivalent: "r")
+        refreshItem.target = self
+        menu.addItem(refreshItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // MARK: ── 2. Agent Sounds Section ──
         let sm = SoundManager.shared
         let isMuted = sm.isMuted
         let currentMode = sm.currentMode
         let units = sm.availableUnits()
         let favorites = sm.loadFavorites()
 
-        // 1. Mute / Toggle Sounds
+        let soundsHeader = NSMenuItem(title: "Agent Sounds", action: #selector(noopAction), keyEquivalent: "")
+        soundsHeader.attributedTitle = NSAttributedString(
+            string: "Agent Sounds",
+            attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
+        )
+        soundsHeader.target = self
+        menu.addItem(soundsHeader)
+
         let toggleItem = NSMenuItem(title: "Sounds Enabled", action: #selector(toggleSoundsAction), keyEquivalent: "")
         toggleItem.target = self
         toggleItem.state = isMuted ? .off : .on
@@ -549,7 +966,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 2. Playback Mode Submenu
+        // Playback Mode Submenu
         let modeMenuItem = NSMenuItem(title: "Playback Mode: \(modeDisplayName(currentMode))", action: nil, keyEquivalent: "")
         let modeSubmenu = NSMenu()
 
@@ -569,7 +986,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             modeSubmenu.addItem(item)
         }
 
-        // Check if locked to a unit
         if !modes.contains(where: { $0.id == currentMode }) && units.contains(currentMode) {
             modeSubmenu.addItem(NSMenuItem.separator())
             let lockedItem = NSMenuItem(title: "Locked to '\(currentMode)'", action: nil, keyEquivalent: "")
@@ -580,7 +996,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         modeMenuItem.submenu = modeSubmenu
         menu.addItem(modeMenuItem)
 
-        // 3. Icon Style Submenu
+        // Icon Style Submenu
         let iconMenuItem = NSMenuItem(title: "Icon Style", action: nil, keyEquivalent: "")
         let iconSubmenu = NSMenu()
         let iconStyles: [(id: String, name: String)] = [
@@ -599,7 +1015,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         iconMenuItem.submenu = iconSubmenu
         menu.addItem(iconMenuItem)
 
-        // 4. Favorites Submenu
+        // Menu Bar Quota Title Submenu
+        let titleMenuItem = NSMenuItem(title: "Menu Bar Quota Display", action: nil, keyEquivalent: "")
+        let titleSubmenu = NSMenu()
+        let titleStyles: [(id: String, name: String)] = [
+            ("primary", "Primary Quota (e.g. Cur: 77%)"),
+            ("compact", "Compact All (Cur | AGY | Cdx)"),
+            ("none", "Icon Only (No Quota Text)")
+        ]
+        for style in titleStyles {
+            let item = NSMenuItem(title: style.name, action: #selector(setMenuBarQuotaStyleAction(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = style.id
+            item.state = (menuBarQuotaStyle == style.id) ? .on : .off
+            titleSubmenu.addItem(item)
+        }
+        titleMenuItem.submenu = titleSubmenu
+        menu.addItem(titleMenuItem)
+
+        // Favorites Submenu
         let favCount = favorites.count
         let totalCount = units.count
         let favMenuItem = NSMenuItem(title: "Favorites (\(favCount)/\(totalCount))", action: nil, keyEquivalent: "")
@@ -635,21 +1069,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 4. Add Sound Files Submenu (Options A, B, C)
+        // Add Sound Files Submenu
         let addMenuItem = NSMenuItem(title: "Add Sound Files", action: nil, keyEquivalent: "")
         let addSubmenu = NSMenu()
 
-        // Option A: Open ~/sounds in Finder
         let finderItem = NSMenuItem(title: "Open ~/sounds in Finder", action: #selector(openFinderAction), keyEquivalent: "o")
         finderItem.target = self
         addSubmenu.addItem(finderItem)
 
-        // Option B: Import Audio Files or Folder
         let importItem = NSMenuItem(title: "Import Audio Files or Folder...", action: #selector(importSoundsAction), keyEquivalent: "i")
         importItem.target = self
         addSubmenu.addItem(importItem)
 
-        // Option C: Download Curated Packs
         let curatedSets = sm.availableCuratedSets()
         let fetchMenuItem = NSMenuItem(title: "Download Curated Packs", action: nil, keyEquivalent: "")
         let fetchSubmenu = NSMenu()
@@ -672,7 +1103,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 5. Actions
+        // Actions
         let testSoundItem = NSMenuItem(title: "Play Test Sound", action: #selector(playTestSoundAction), keyEquivalent: "t")
         testSoundItem.target = self
         menu.addItem(testSoundItem)
@@ -684,7 +1115,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 6. Quit
+        // Quit
         let quitItem = NSMenuItem(title: "Quit Agent Sounds", action: #selector(quitAction), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -701,6 +1132,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - Actions
+
+    @objc func openURLAction(_ sender: NSMenuItem) {
+        if let urlStr = sender.representedObject as? String, let url = URL(string: urlStr) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc func refreshQuotasAction() {
+        QuotaManager.shared.refreshInBackground { [weak self] _ in
+            self?.updateStatusIcon()
+            self?.rebuildMenu()
+        }
+    }
+
+    @objc func setMenuBarQuotaStyleAction(_ sender: NSMenuItem) {
+        guard let style = sender.representedObject as? String else { return }
+        menuBarQuotaStyle = style
+        updateStatusIcon()
+        rebuildMenu()
+    }
+
+    @objc func noopAction() {}
 
     @objc func toggleSoundsAction() {
         SoundManager.shared.toggleMute()
