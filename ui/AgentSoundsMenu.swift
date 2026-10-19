@@ -674,12 +674,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let image = createCustomBotIcon(isMuted: isMuted)
             button.image = image
         }
-
-        if menuBarQuotaStyle != "none", let summary = QuotaManager.shared.menuBarSummary(style: menuBarQuotaStyle) {
-            button.title = " \(summary)"
-        } else {
-            button.title = ""
-        }
+        button.title = ""
     }
 
     // MARK: - Menu Construction
@@ -985,24 +980,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         iconMenuItem.submenu = iconSubmenu
         menu.addItem(iconMenuItem)
-
-        // Menu Bar Quota Title Submenu
-        let titleMenuItem = NSMenuItem(title: "Menu Bar Quota Display", action: nil, keyEquivalent: "")
-        let titleSubmenu = NSMenu()
-        let titleStyles: [(id: String, name: String)] = [
-            ("primary", "Primary Quota (e.g. Cur: 77%)"),
-            ("compact", "Compact All (Cur | AGY | Cdx)"),
-            ("none", "Icon Only (No Quota Text)")
-        ]
-        for style in titleStyles {
-            let item = NSMenuItem(title: style.name, action: #selector(setMenuBarQuotaStyleAction(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = style.id
-            item.state = (menuBarQuotaStyle == style.id) ? .on : .off
-            titleSubmenu.addItem(item)
-        }
-        titleMenuItem.submenu = titleSubmenu
-        menu.addItem(titleMenuItem)
 
         // Favorites Submenu
         let favCount = favorites.count
