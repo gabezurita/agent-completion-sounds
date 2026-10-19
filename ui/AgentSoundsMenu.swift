@@ -413,13 +413,20 @@ class QuotaManager {
         let font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
         let result = NSMutableAttributedString()
 
-        // 1. Dot, Name, and Percentage (Crisp high-contrast labelColor)
+        // 1. Status Bar (▌ U+258C — 4/8 width) tinted with statusColor
+        let barColor = statusColor(remainingPct: remainingPct)
         result.append(NSAttributedString(
-            string: "  \(dot) \(paddedName) \(pctStr)  ",
+            string: "  ▌ ",
+            attributes: [.font: font, .foregroundColor: barColor]
+        ))
+
+        // 2. Name and Percentage (Crisp high-contrast labelColor)
+        result.append(NSAttributedString(
+            string: "\(paddedName) \(pctStr)  ",
             attributes: [.font: font, .foregroundColor: NSColor.labelColor]
         ))
 
-        // 2. Opening bracket
+        // 3. Opening bracket
         result.append(NSAttributedString(
             string: "[",
             attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]
