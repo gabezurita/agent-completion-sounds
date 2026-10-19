@@ -760,12 +760,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let cursor = providers["cursor"] as? [String: Any], cursor["status"] as? String == "ok" {
             let countdown = cursor["reset_countdown"] as? String
             let cdStr = (countdown != nil && !countdown!.isEmpty) ? " · Resets in \(countdown!)" : ""
-            let cursorHeader = NSMenuItem(title: "Cursor Pro\(cdStr)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            let cursorHeader = NSMenuItem(title: "Cursor Pro\(cdStr)", action: #selector(noopAction), keyEquivalent: "")
             cursorHeader.attributedTitle = NSAttributedString(
                 string: "Cursor Pro\(cdStr)",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            cursorHeader.representedObject = "cursor://settings"
             cursorHeader.target = self
             menu.addItem(cursorHeader)
 
@@ -777,9 +776,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let rawLabel = m["label"] as? String ?? mkey
                     let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
                     let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: countdown)
-                    let item = NSMenuItem(title: rowAttr.string, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                    let item = NSMenuItem(title: rowAttr.string, action: #selector(noopAction), keyEquivalent: "")
                     item.attributedTitle = rowAttr
-                    item.representedObject = "cursor://settings"
                     item.target = self
                     menu.addItem(item)
                 }
@@ -789,12 +787,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 let remUsd = spend["remaining_usd"] as? Double ?? 0.0
                 let limUsd = spend["limit_usd"] as? Double ?? 0.0
                 let spendStr = String(format: "    Spend Limit Runway: $%.2f / $%.2f", remUsd, limUsd)
-                let spendItem = NSMenuItem(title: spendStr, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                let spendItem = NSMenuItem(title: spendStr, action: #selector(noopAction), keyEquivalent: "")
                 spendItem.attributedTitle = NSAttributedString(
                     string: spendStr,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                spendItem.representedObject = "cursor://settings"
                 spendItem.target = self
                 menu.addItem(spendItem)
             }
@@ -843,12 +840,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // OpenAI Codex Section
         if let cdx = providers["codex"] as? [String: Any], cdx["status"] as? String == "ok" {
             let planStr = cdx["plan_type"] as? String ?? (cdx["auth_mode"] as? String ?? "ChatGPT")
-            let cdxHeader = NSMenuItem(title: "OpenAI Codex (\(planStr))", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            let cdxHeader = NSMenuItem(title: "OpenAI Codex (\(planStr))", action: #selector(noopAction), keyEquivalent: "")
             cdxHeader.attributedTitle = NSAttributedString(
                 string: "OpenAI Codex (\(planStr))",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            cdxHeader.representedObject = "https://chatgpt.com"
             cdxHeader.target = self
             menu.addItem(cdxHeader)
 
@@ -861,9 +857,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
                     let cd = r["reset_countdown"] as? String
                     let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
-                    let item = NSMenuItem(title: rowAttr.string, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                    let item = NSMenuItem(title: rowAttr.string, action: #selector(noopAction), keyEquivalent: "")
                     item.attributedTitle = rowAttr
-                    item.representedObject = "https://chatgpt.com"
                     item.target = self
                     menu.addItem(item)
                 }
@@ -871,12 +866,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
             if let credits = cdx["reset_credits_available"] as? Int, credits > 0 {
                 let credStr = "    Reset Credits Available: \(credits) credits"
-                let credItem = NSMenuItem(title: credStr, action: #selector(openURLAction(_:)), keyEquivalent: "")
+                let credItem = NSMenuItem(title: credStr, action: #selector(noopAction), keyEquivalent: "")
                 credItem.attributedTitle = NSAttributedString(
                     string: credStr,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                credItem.representedObject = "https://chatgpt.com"
                 credItem.target = self
                 menu.addItem(credItem)
             }
@@ -909,12 +903,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Claude Code Section
         if let claude = providers["claude"] as? [String: Any], claude["status"] as? String == "ok" {
-            let claudeHeader = NSMenuItem(title: "Claude Code (Local Telemetry)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            let claudeHeader = NSMenuItem(title: "Claude Code (Local Telemetry)", action: #selector(noopAction), keyEquivalent: "")
             claudeHeader.attributedTitle = NSAttributedString(
                 string: "Claude Code (Local Telemetry)",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
-            claudeHeader.representedObject = "https://claude.ai"
             claudeHeader.target = self
             menu.addItem(claudeHeader)
 
@@ -924,31 +917,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             numFormatter.numberStyle = .decimal
             let msgStr = numFormatter.string(from: NSNumber(value: messages)) ?? "\(messages)"
 
-            let sessItem = NSMenuItem(title: "    Lifetime Sessions: \(sessions) sessions", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            let sessItem = NSMenuItem(title: "    Lifetime Sessions: \(sessions) sessions", action: #selector(noopAction), keyEquivalent: "")
             sessItem.attributedTitle = NSAttributedString(
                 string: "    Lifetime Sessions: \(sessions) sessions",
                 attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
             )
-            sessItem.representedObject = "https://claude.ai"
             sessItem.target = self
             menu.addItem(sessItem)
 
-            let msgItem = NSMenuItem(title: "    Total Messages Recorded: \(msgStr)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+            let msgItem = NSMenuItem(title: "    Total Messages Recorded: \(msgStr)", action: #selector(noopAction), keyEquivalent: "")
             msgItem.attributedTitle = NSAttributedString(
                 string: "    Total Messages Recorded: \(msgStr)",
                 attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
             )
-            msgItem.representedObject = "https://claude.ai"
             msgItem.target = self
             menu.addItem(msgItem)
 
             if let today = claude["today"] as? [String: Any], let todayCount = today["message_count"] as? Int, todayCount > 0 {
-                let todayItem = NSMenuItem(title: "    Today's Messages: \(todayCount)", action: #selector(openURLAction(_:)), keyEquivalent: "")
+                let todayItem = NSMenuItem(title: "    Today's Messages: \(todayCount)", action: #selector(noopAction), keyEquivalent: "")
                 todayItem.attributedTitle = NSAttributedString(
                     string: "    Today's Messages: \(todayCount)",
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
                 )
-                todayItem.representedObject = "https://claude.ai"
                 todayItem.target = self
                 menu.addItem(todayItem)
             }
