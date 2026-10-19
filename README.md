@@ -31,7 +31,7 @@ verification, customization, and uninstall instructions.
 - `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
   shared player's stdin contract.
 - `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes, with instant mute/unmute control (`mute`, `unmute`, `toggle-mute`, `status`).
-- `ui/AgentSoundsMenu.swift` - ultra-lightweight native macOS Menu Bar status item (~160 KB, ~15 MB RAM, 0% CPU idle) for 1-click mute toggle (SF Symbols 🔊/🔇), dynamic favorites curation, and sound addition.
+- `ui/AgentSoundsMenu.swift` - ultra-lightweight native macOS Menu Bar status item (`Agent Sounds.app`, ~160 KB, ~15 MB RAM, 0% CPU idle) combining 1-click sound controls (mute toggle, sound mode selection, favorites curation) with live **AIQuotas** telemetry. In the background, it queries `~/.agents/scripts/ai_quota_collector.py` (cached to `/tmp/ai_quota_collector_cache.json`, 60s TTL) to render a formatted status table with progress meters, reset countdowns, and warning/critical threshold alerts across Cursor, Google Antigravity, OpenAI Codex, and Claude Code.
 - `integrations/alfred/` - Alfred 5 Workflow (`snd` keyword) for keyboard-driven mute toggle, favorites search, and sound management.
 - `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated sound sets (e.g. classical RTS, sci-fi builders, hero shooters) into `~/sounds/`.
 - Cross-platform playback: `afplay` (macOS), falling back to `paplay` or `aplay` (Linux).

@@ -4,6 +4,11 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "SKIP: AgentSoundsMenu requires macOS (Darwin). Skipping build test on $(uname -s)."
+  exit 0
+fi
+
 echo "=== Test 1: Verify AgentSoundsMenu compiles cleanly ==="
 bash "${REPO_ROOT}/scripts/build-menu-bar-app.sh"
 echo "PASS: AgentSoundsMenu compiled cleanly into build/Agent Sounds.app"
