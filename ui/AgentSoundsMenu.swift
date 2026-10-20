@@ -746,7 +746,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func rebuildMenu() {
         menu.removeAllItems()
 
-        // MARK: ── 1. Agent Sounds Section ──
+        // MARK: ── 1. Agent Dashboard ──
+        let dashboardHeaderAttr = NSAttributedString(
+            string: "Agent Dashboard",
+            attributes: [.font: NSFont.boldSystemFont(ofSize: 13), .foregroundColor: NSColor.labelColor]
+        )
+        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: dashboardHeaderAttr, height: 24, leftPadding: 14))
+        menu.addItem(NSMenuItem.separator())
+
         let sm = SoundManager.shared
         let isMuted = sm.isMuted
         let currentMode = sm.currentMode
@@ -755,9 +762,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let soundsHeaderAttr = NSAttributedString(
             string: "Agent Sounds",
-            attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
+            attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]
         )
-        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: soundsHeaderAttr, height: 22, leftPadding: 14))
+        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: soundsHeaderAttr, height: 20, leftPadding: 14))
 
         let toggleItem = NSMenuItem(title: "Sounds Enabled", action: #selector(toggleSoundsAction), keyEquivalent: "")
         toggleItem.target = self
@@ -922,7 +929,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem.separator())
 
         // Quit
-        let quitItem = NSMenuItem(title: "Quit Agent Sounds", action: #selector(quitAction), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit Agent Dashboard", action: #selector(quitAction), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -940,7 +947,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         let quotaHeaderAttr = NSAttributedString(
-            string: "AIQuotas\(timeStr)",
+            string: "AI Quotas\(timeStr)",
             attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
         )
         menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: quotaHeaderAttr, height: 22, leftPadding: 14))
