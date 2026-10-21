@@ -488,6 +488,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = statusItem.button {
+            button.imagePosition = .imageOnly
+        }
         menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -522,16 +525,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func createCustomBotIcon(isMuted: Bool) -> NSImage {
-        let size = NSSize(width: 19, height: 18)
+        let size = NSSize(width: 17, height: 18)
         let image = NSImage(size: size, flipped: false) { rect in
             NSColor.black.setFill()
             NSColor.black.setStroke()
             
-            let headX: CGFloat = 7.5
+            let headX: CGFloat = 6.2
             let headY: CGFloat = 3.0
-            let headW: CGFloat = 10.5
+            let headW: CGFloat = 10.0
             let headH: CGFloat = 10.5
-            let centerX = headX + headW / 2.0 // 12.75
+            let centerX = headX + headW / 2.0 // 11.2
             let centerY = headY + headH / 2.0 // 8.25
             
             // 1. Robot Head (stationary in both active & muted states)
@@ -551,9 +554,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if !isMuted {
                 // ACTIVE: Cheerful Eyes [ ^ ‿ ^ ]
                 let leftEye = NSBezierPath()
-                leftEye.move(to: NSPoint(x: headX + 2.0, y: 8.8))
-                leftEye.line(to: NSPoint(x: headX + 3.3, y: 10.5))
-                leftEye.line(to: NSPoint(x: headX + 4.6, y: 8.8))
+                leftEye.move(to: NSPoint(x: headX + 1.7, y: 8.8))
+                leftEye.line(to: NSPoint(x: headX + 2.9, y: 10.5))
+                leftEye.line(to: NSPoint(x: headX + 4.1, y: 8.8))
                 leftEye.lineWidth = 1.3
                 leftEye.lineCapStyle = .round
                 leftEye.lineJoinStyle = .round
@@ -561,8 +564,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 
                 let rightEye = NSBezierPath()
                 rightEye.move(to: NSPoint(x: headX + 5.9, y: 8.8))
-                rightEye.line(to: NSPoint(x: headX + 7.2, y: 10.5))
-                rightEye.line(to: NSPoint(x: headX + 8.5, y: 8.8))
+                rightEye.line(to: NSPoint(x: headX + 7.1, y: 10.5))
+                rightEye.line(to: NSPoint(x: headX + 8.3, y: 8.8))
                 rightEye.lineWidth = 1.3
                 rightEye.lineCapStyle = .round
                 rightEye.lineJoinStyle = .round
@@ -570,54 +573,54 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 
                 // Cheerful Smile Arc (clear breathing room above bottom border)
                 let smile = NSBezierPath()
-                smile.appendArc(withCenter: NSPoint(x: centerX, y: 6.9), radius: 1.5, startAngle: 200, endAngle: 340, clockwise: false)
+                smile.appendArc(withCenter: NSPoint(x: centerX, y: 6.9), radius: 1.4, startAngle: 200, endAngle: 340, clockwise: false)
                 smile.lineWidth = 1.2
                 smile.lineCapStyle = .round
                 smile.stroke()
                 
                 // 3 Curved Sound Wave Arcs on LEFT: ((( (radiating from bot outward to left)
-                let arcCenter = NSPoint(x: headX + 0.5, y: centerY)
+                let arcCenter = NSPoint(x: headX + 0.4, y: centerY)
                 
                 // Small arc (closest to bot):
                 let w1 = NSBezierPath()
-                w1.appendArc(withCenter: arcCenter, radius: 2.3, startAngle: 130, endAngle: 230, clockwise: false)
+                w1.appendArc(withCenter: arcCenter, radius: 2.0, startAngle: 130, endAngle: 230, clockwise: false)
                 w1.lineWidth = 1.3
                 w1.lineCapStyle = .round
                 w1.stroke()
                 
                 // Medium arc (mid):
                 let w2 = NSBezierPath()
-                w2.appendArc(withCenter: arcCenter, radius: 4.3, startAngle: 135, endAngle: 225, clockwise: false)
+                w2.appendArc(withCenter: arcCenter, radius: 3.8, startAngle: 135, endAngle: 225, clockwise: false)
                 w2.lineWidth = 1.3
                 w2.lineCapStyle = .round
                 w2.stroke()
                 
                 // Big arc (outer left):
                 let w3 = NSBezierPath()
-                w3.appendArc(withCenter: arcCenter, radius: 6.3, startAngle: 140, endAngle: 220, clockwise: false)
+                w3.appendArc(withCenter: arcCenter, radius: 5.6, startAngle: 140, endAngle: 220, clockwise: false)
                 w3.lineWidth = 1.3
                 w3.lineCapStyle = .round
                 w3.stroke()
             } else {
                 // MUTED: Sleepy / Resting Face [ - _ - ]
                 let leftEye = NSBezierPath()
-                leftEye.move(to: NSPoint(x: headX + 2.0, y: 8.8))
-                leftEye.line(to: NSPoint(x: headX + 3.8, y: 8.8))
+                leftEye.move(to: NSPoint(x: headX + 1.7, y: 8.8))
+                leftEye.line(to: NSPoint(x: headX + 3.4, y: 8.8))
                 leftEye.lineWidth = 1.3
                 leftEye.lineCapStyle = .round
                 leftEye.stroke()
                 
                 let rightEye = NSBezierPath()
-                rightEye.move(to: NSPoint(x: headX + 6.7, y: 8.8))
-                rightEye.line(to: NSPoint(x: headX + 8.5, y: 8.8))
+                rightEye.move(to: NSPoint(x: headX + 6.6, y: 8.8))
+                rightEye.line(to: NSPoint(x: headX + 8.3, y: 8.8))
                 rightEye.lineWidth = 1.3
                 rightEye.lineCapStyle = .round
                 rightEye.stroke()
                 
                 // Quiet straight mouth
                 let mouth = NSBezierPath()
-                mouth.move(to: NSPoint(x: headX + 3.6, y: 6.2))
-                mouth.line(to: NSPoint(x: headX + 6.9, y: 6.2))
+                mouth.move(to: NSPoint(x: headX + 3.4, y: 6.2))
+                mouth.line(to: NSPoint(x: headX + 6.6, y: 6.2))
                 mouth.lineWidth = 1.2
                 mouth.lineCapStyle = .round
                 mouth.stroke()
@@ -630,38 +633,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func createCustomBotWaveIcon(isMuted: Bool) -> NSImage {
-        let size = NSSize(width: 22, height: 18)
+        let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size, flipped: false) { rect in
             NSColor.black.setFill()
             NSColor.black.setStroke()
             
-            let head = NSBezierPath(roundedRect: NSRect(x: 1.0, y: 3.0, width: 10.5, height: 10.5), xRadius: 2.4, yRadius: 2.4)
+            let head = NSBezierPath(roundedRect: NSRect(x: 0.5, y: 3.0, width: 10.0, height: 10.5), xRadius: 2.4, yRadius: 2.4)
             head.lineWidth = 1.3
             head.stroke()
             
             let ant = NSBezierPath()
-            ant.move(to: NSPoint(x: 6.25, y: 13.5))
-            ant.line(to: NSPoint(x: 6.25, y: 15.5))
+            ant.move(to: NSPoint(x: 5.5, y: 13.5))
+            ant.line(to: NSPoint(x: 5.5, y: 15.5))
             ant.lineWidth = 1.2
             ant.stroke()
-            let antDot = NSBezierPath(ovalIn: NSRect(x: 5.25, y: 15.0, width: 2.0, height: 2.0))
+            let antDot = NSBezierPath(ovalIn: NSRect(x: 4.5, y: 15.0, width: 2.0, height: 2.0))
             antDot.fill()
             
             if !isMuted {
                 // Happy Cheerful Eyes: ^  ^
                 let leftEye = NSBezierPath()
-                leftEye.move(to: NSPoint(x: 2.8, y: 8.8))
-                leftEye.line(to: NSPoint(x: 4.1, y: 10.5))
-                leftEye.line(to: NSPoint(x: 5.4, y: 8.8))
+                leftEye.move(to: NSPoint(x: 2.2, y: 8.8))
+                leftEye.line(to: NSPoint(x: 3.4, y: 10.5))
+                leftEye.line(to: NSPoint(x: 4.6, y: 8.8))
                 leftEye.lineWidth = 1.3
                 leftEye.lineCapStyle = .round
                 leftEye.lineJoinStyle = .round
                 leftEye.stroke()
                 
                 let rightEye = NSBezierPath()
-                rightEye.move(to: NSPoint(x: 7.1, y: 8.8))
-                rightEye.line(to: NSPoint(x: 8.4, y: 10.5))
-                rightEye.line(to: NSPoint(x: 9.7, y: 8.8))
+                rightEye.move(to: NSPoint(x: 6.4, y: 8.8))
+                rightEye.line(to: NSPoint(x: 7.6, y: 10.5))
+                rightEye.line(to: NSPoint(x: 8.8, y: 8.8))
                 rightEye.lineWidth = 1.3
                 rightEye.lineCapStyle = .round
                 rightEye.lineJoinStyle = .round
@@ -669,36 +672,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 
                 // Cheerful Smile Arc
                 let smile = NSBezierPath()
-                smile.appendArc(withCenter: NSPoint(x: 6.25, y: 6.9), radius: 1.5, startAngle: 200, endAngle: 340, clockwise: false)
+                smile.appendArc(withCenter: NSPoint(x: 5.5, y: 6.9), radius: 1.4, startAngle: 200, endAngle: 340, clockwise: false)
                 smile.lineWidth = 1.2
                 smile.lineCapStyle = .round
                 smile.stroke()
                 
-                let b1 = NSBezierPath(roundedRect: NSRect(x: 13.0, y: 5.5, width: 1.8, height: 5.5), xRadius: 0.9, yRadius: 0.9)
+                let b1 = NSBezierPath(roundedRect: NSRect(x: 11.5, y: 5.5, width: 1.6, height: 5.5), xRadius: 0.8, yRadius: 0.8)
                 b1.fill()
-                let b2 = NSBezierPath(roundedRect: NSRect(x: 16.0, y: 3.0, width: 1.8, height: 10.5), xRadius: 0.9, yRadius: 0.9)
+                let b2 = NSBezierPath(roundedRect: NSRect(x: 13.8, y: 3.0, width: 1.6, height: 10.5), xRadius: 0.8, yRadius: 0.8)
                 b2.fill()
-                let b3 = NSBezierPath(roundedRect: NSRect(x: 19.0, y: 4.8, width: 1.8, height: 7.0), xRadius: 0.9, yRadius: 0.9)
+                let b3 = NSBezierPath(roundedRect: NSRect(x: 16.1, y: 4.8, width: 1.6, height: 7.0), xRadius: 0.8, yRadius: 0.8)
                 b3.fill()
             } else {
                 // Sleepy Face [ - _ - ]
                 let leftEye = NSBezierPath()
-                leftEye.move(to: NSPoint(x: 2.8, y: 8.8))
-                leftEye.line(to: NSPoint(x: 4.6, y: 8.8))
+                leftEye.move(to: NSPoint(x: 2.2, y: 8.8))
+                leftEye.line(to: NSPoint(x: 3.9, y: 8.8))
                 leftEye.lineWidth = 1.3
                 leftEye.lineCapStyle = .round
                 leftEye.stroke()
                 
                 let rightEye = NSBezierPath()
-                rightEye.move(to: NSPoint(x: 7.9, y: 8.8))
-                rightEye.line(to: NSPoint(x: 9.7, y: 8.8))
+                rightEye.move(to: NSPoint(x: 7.1, y: 8.8))
+                rightEye.line(to: NSPoint(x: 8.8, y: 8.8))
                 rightEye.lineWidth = 1.3
                 rightEye.lineCapStyle = .round
                 rightEye.stroke()
                 
                 let mouth = NSBezierPath()
-                mouth.move(to: NSPoint(x: 4.6, y: 6.2))
-                mouth.line(to: NSPoint(x: 7.9, y: 6.2))
+                mouth.move(to: NSPoint(x: 3.9, y: 6.2))
+                mouth.line(to: NSPoint(x: 7.1, y: 6.2))
                 mouth.lineWidth = 1.2
                 mouth.lineCapStyle = .round
                 mouth.stroke()
@@ -711,6 +714,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func updateStatusIcon() {
         guard let button = statusItem.button else { return }
+        button.imagePosition = .imageOnly
         let isMuted = SoundManager.shared.isMuted
 
         switch currentIconStyle {
