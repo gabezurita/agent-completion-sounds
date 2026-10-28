@@ -161,6 +161,7 @@ class SoundManager {
             // Allow test sound even if muted globally or within turn cooldown
             var env = ProcessInfo.processInfo.environment
             env["AGENT_COMPLETION_SOUND_DISABLE"] = "0"
+            env["AGENT_COMPLETION_SOUND_PREVIEW"] = "1"
             env["AGENT_SOUND_COOLDOWN_SECS"] = "0"
             task.environment = env
             let inPipe = Pipe()
@@ -923,6 +924,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Actions
         let testSoundItem = NSMenuItem(title: "Play Test Sound", action: #selector(playTestSoundAction), keyEquivalent: "t")
         testSoundItem.target = self
+        testSoundItem.toolTip = "One-off preview; agent sounds remain disabled."
         menu.addItem(testSoundItem)
 
         let clearSessionsItem = NSMenuItem(title: "Reset Active Sessions", action: #selector(clearSessionsAction), keyEquivalent: "")
