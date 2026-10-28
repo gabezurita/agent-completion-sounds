@@ -322,6 +322,7 @@ class QuotaManager {
         var curRem: Int?
         var agyRem: Int?
         var cdxRem: Int?
+        var orRem: Double?
 
         if let cur = providers["cursor"] as? [String: Any],
            cur["status"] as? String == "ok",
@@ -347,17 +348,25 @@ class QuotaManager {
             cdxRem = rem
         }
 
+        if let openrouter = providers["openrouter"] as? [String: Any],
+           openrouter["status"] as? String == "ok",
+           let rem = openrouter["remaining_usd"] as? Double {
+            orRem = rem
+        }
+
         switch style {
         case "primary":
             if let cur = curRem { return "Cur: \(cur)%" }
             if let agy = agyRem { return "AGY: \(agy)%" }
             if let cdx = cdxRem { return "Cdx: \(cdx)%" }
+            if let or = orRem { return String(format: "OR: $%.2f", or) }
             return nil
         case "compact":
             var parts: [String] = []
             if let cur = curRem { parts.append("Cur: \(cur)%") }
             if let agy = agyRem { parts.append("AGY: \(agy)%") }
             if let cdx = cdxRem { parts.append("Cdx: \(cdx)%") }
+            if let or = orRem { parts.append(String(format: "OR: $%.2f", or)) }
             return parts.isEmpty ? nil : parts.joined(separator: " | ")
         default:
             return nil
@@ -1169,6 +1178,65 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 )
                 menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: todayAttr, height: 18, leftPadding: 14))
             }
+
+            menu.addItem(NSMenuItem.separator())
+        }
+
+        // OpenRouter Gateway Section
+        if let openrouter = providers["openrouter"] as? [String: Any], openrouter["status"] as? String == "ok" {
+            let countdown = openrouter["reset_countdown"] as? String
+            let cdStr = (countdown != nil && !countdown!.isEmpty) ? " · Resets in \(countdown!)" : ""
+            let remUsd = openrouter["remaining_usd"] as? Double ?? 0.0
+            let spendUsd = openrouter["spend_usd"] as? Double ?? 0.0
+            let limitUsd = openrouter["limit_usd"] as? Double ?? 10.0
+
+            let orHeaderAttr = NSAttributedString(
+                string: "OpenRouter Gateway\(cdStr)",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: orHeaderAttr, height: 20, leftPadding: 14))
+
+            if let models = openrouter["models"] as? [String: Any],
+               let credits = models["credits"] as? [String: Any],
+               let remPct = credits["remaining_percent"] as? Int {
+                let dot = QuotaManager.statusDot(remainingPct: remPct)
+                let cd = (countdown != nil && !countdown!.isEmpty) ? countdown : String(format: "$%.2f", remUsd)
+                let rowAttr = QuotaManager.formatTableRow(dot: dot, name: "Credits Balance", remainingPct: remPct, resetCountdown: cd)
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: rowAttr, height: 20, leftPadding: 14))
+            }
+
+            let spendStr = String(format: "    Monthly Spend: $%.4f (Limit: $%.2f)", spendUsd, limitUsd)
+            let spendAttr = NSAttributedString(
+                string: spendStr,
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: spendAttr, height: 18, leftPadding: 14))
+
+            menu.addItem(NSMenuItem.separator())
+        }
+
+        // OpenCode CLI Section
+        if let opencode = providers["opencode"] as? [String: Any], opencode["status"] as? String == "ok" {
+            let ocHeaderAttr = NSAttributedString(
+                string: "OpenCode CLI (Local Telemetry)",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: ocHeaderAttr, height: 20, leftPadding: 14))
+
+            let sessions = opencode["total_sessions"] as? Int ?? 0
+            let messages = opencode["total_messages"] as? Int ?? 0
+
+            let sessAttr = NSAttributedString(
+                string: "    Lifetime Sessions: \(sessions) sessions",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: sessAttr, height: 18, leftPadding: 14))
+
+            let msgAttr = NSAttributedString(
+                string: "    Total Messages: \(messages) messages",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: msgAttr, height: 18, leftPadding: 14))
 
             menu.addItem(NSMenuItem.separator())
         }
