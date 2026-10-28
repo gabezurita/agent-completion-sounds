@@ -1124,6 +1124,53 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(NSMenuItem.separator())
         }
 
+        // GitHub Copilot Section
+        if let copilot = providers["copilot"] as? [String: Any], copilot["status"] as? String == "ok" {
+            let copilotHeaderAttr = NSAttributedString(
+                string: "GitHub Copilot (Local Telemetry)",
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: copilotHeaderAttr, height: 20, leftPadding: 14))
+
+            let sessions = copilot["total_sessions"] as? Int ?? 0
+            let credits = copilot["total_ai_credits"] as? Double ?? 0.0
+            let tokens = copilot["total_tokens"] as? Int ?? 0
+
+            let numFormatter = NumberFormatter()
+            numFormatter.numberStyle = .decimal
+            let tokenStr = numFormatter.string(from: NSNumber(value: tokens)) ?? "\(tokens)"
+            let creditsStr = String(format: "%.2f", credits)
+
+            let sessAttr = NSAttributedString(
+                string: "    Lifetime Sessions: \(sessions) sessions",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: sessAttr, height: 18, leftPadding: 14))
+
+            let credAttr = NSAttributedString(
+                string: "    AI Credits Used: \(creditsStr) credits",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: credAttr, height: 18, leftPadding: 14))
+
+            let tokenAttr = NSAttributedString(
+                string: "    Tracked Tokens: \(tokenStr)",
+                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: tokenAttr, height: 18, leftPadding: 14))
+
+            if let today = copilot["today"] as? [String: Any], let todayCredits = today["ai_credits_used"] as? Double, todayCredits > 0 {
+                let todayStr = String(format: "%.2f", todayCredits)
+                let todayAttr = NSAttributedString(
+                    string: "    Today's Credits: \(todayStr) credits",
+                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                )
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: todayAttr, height: 18, leftPadding: 14))
+            }
+
+            menu.addItem(NSMenuItem.separator())
+        }
+
         // Quota Actions
         let webItem = NSMenuItem(title: "Open Web Dashboard (localhost:3333)", action: #selector(openURLAction(_:)), keyEquivalent: "")
         webItem.representedObject = "http://localhost:3333"
