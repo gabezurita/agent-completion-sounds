@@ -1,0 +1,9 @@
+# Agent Turn Completion Sound Hook for Aider and OpenCode CLI
+# Source in ~/.zshrc or ~/.dotfiles/.zshrc_source_files/git_aliases.zsh
+
+_play_agent_completion_sound() {
+  local sound_helper="${AGENT_SOUND_HELPER:-$HOME/.local/bin/play-random-completion-sound.sh}"
+  if [[ -x "$sound_helper" ]]; then
+    "$sound_helper" stop < /dev/null >/dev/null 2>&1 &
+  fi
+}
