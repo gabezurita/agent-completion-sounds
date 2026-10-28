@@ -11,10 +11,10 @@ fi
 
 echo "=== Test 1: Verify AgentSoundsMenu compiles cleanly ==="
 bash "${REPO_ROOT}/scripts/build-menu-bar-app.sh"
-echo "PASS: AgentSoundsMenu compiled cleanly into build/Agent Sounds.app"
+echo "PASS: AgentSoundsMenu compiled cleanly into build/AgentDashboard.app"
 
 echo "=== Test 2: Verify binary exists and is executable ==="
-APP_BIN="${REPO_ROOT}/build/Agent Sounds.app/Contents/MacOS/AgentSoundsMenu"
+APP_BIN="${REPO_ROOT}/build/AgentDashboard.app/Contents/MacOS/AgentSoundsMenu"
 if [[ -x "${APP_BIN}" ]]; then
   echo "PASS: Compiled executable is present and executable"
 else

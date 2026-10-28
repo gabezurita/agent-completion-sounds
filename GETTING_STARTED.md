@@ -109,7 +109,7 @@ You can customize the mode using:
 
 For visual and keyboard-driven control on macOS:
 
-- **Native Menu Bar App:** Run `./scripts/build-menu-bar-app.sh --link --start` to build and launch `Agent Sounds.app` in your macOS menu bar (~160 KB binary, ~15 MB RAM, 0% CPU idle). Features ambient 🔊/🔇 status, 1-click mute, dynamic favorites checklist, mode switching, and sound import (via Finder, file picker, or curated download).
+- **Native Menu Bar App:** Run `./scripts/build-menu-bar-app.sh --link --start` to build and launch `AgentDashboard.app` in your macOS menu bar (~160 KB binary, ~15 MB RAM, 0% CPU idle). Features ambient 🔊/🔇 status, 1-click mute, dynamic favorites checklist, mode switching, and sound import (via Finder, file picker, or curated download).
 - **Alfred 5 Workflow:** Run `./scripts/package-alfred-workflow.sh` and double-click `build/Agent-Completion-Sounds.alfredworkflow` to install. Control everything via `snd` (`snd toggle`, `snd fav`, `snd mode`, `snd test`, `snd open`).
 
 See the [README configuration section](README.md#configuration) for volume, disabling

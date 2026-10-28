@@ -31,7 +31,7 @@ verification, customization, and uninstall instructions.
 - `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
   shared player's stdin contract.
 - `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes, with instant mute/unmute control (`mute`, `unmute`, `toggle-mute`, `status`).
-- `ui/AgentSoundsMenu.swift` - ultra-lightweight native macOS Menu Bar status item (`Agent Sounds.app`, ~160 KB, ~15 MB RAM, 0% CPU idle) combining 1-click sound controls (mute toggle, sound mode selection, favorites curation) with live **AIQuotas** telemetry. In the background, it queries `~/.agents/scripts/ai_quota_collector.py` (cached to `/tmp/ai_quota_collector_cache.json`, 60s TTL) to render a formatted status table with progress meters, reset countdowns, and warning/critical threshold alerts across Cursor, Google Antigravity, OpenAI Codex, and Claude Code.
+- `ui/AgentSoundsMenu.swift` - ultra-lightweight native macOS Menu Bar status item (`AgentDashboard.app`, ~160 KB, ~15 MB RAM, 0% CPU idle) combining 1-click sound controls (mute toggle, sound mode selection, favorites curation) with live **AIQuotas** telemetry. In the background, it queries `~/.agents/scripts/ai_quota_collector.py` (cached to `/tmp/ai_quota_collector_cache.json`, 60s TTL) to render a formatted status table with progress meters, reset countdowns, and warning/critical threshold alerts across Cursor, Google Antigravity, OpenAI Codex, and Claude Code.
 - `integrations/alfred/` - Alfred 5 Workflow (`snd` keyword) for keyboard-driven mute toggle, favorites search, and sound management.
 - `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated sound sets (e.g. classical RTS, sci-fi builders, hero shooters) into `~/sounds/`.
 - Cross-platform playback: `afplay` (macOS), falling back to `paplay` or `aplay` (Linux).
@@ -172,7 +172,7 @@ You can also force a specific unit for any shell/process by setting `export AGEN
 
 For a frictionless macOS experience with zero terminal friction, this project includes an ultra-lightweight native Menu Bar Status Item and an Alfred 5 workflow that share the exact same filesystem state (`~/sounds/.disabled`, `~/sounds/.mode`, and `~/sounds/favorites.txt`).
 
-#### 1. Native macOS Menu Bar App (`Agent Sounds.app`)
+#### 1. Native macOS Menu Bar App (`AgentDashboard.app`)
 - **Resource Footprint:** ~160 KB compiled binary, ~15 MB RAM, 0% CPU idle (pure AppKit, event-driven, zero external dependencies).
 - **Ambient Status:** Menu bar icon displays SF Symbols `speaker.wave.2.fill` (active) or `speaker.slash.fill` (muted).
 - **1-Click Mute Toggle:** Click the status icon to toggle mute on/off instantly without restarting IDEs or agent sessions.
