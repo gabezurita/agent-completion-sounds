@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 BUILD_DIR="${REPO_ROOT}/build"
-APP_NAME="Agent Sounds"
+APP_NAME="AgentDashboard"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 SWIFT_SOURCE="${REPO_ROOT}/ui/AgentSoundsMenu.swift"
 BIN_NAME="AgentSoundsMenu"
@@ -79,7 +79,9 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIdentifier</key>
     <string>com.gabo.agent-sounds-menu</string>
     <key>CFBundleName</key>
-    <string>Agent Sounds</string>
+    <string>AgentDashboard</string>
+    <key>CFBundleDisplayName</key>
+    <string>Agent Dashboard</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
