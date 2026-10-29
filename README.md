@@ -3,9 +3,11 @@
 [![CI](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml/badge.svg)](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow.svg)](https://buymeacoffee.com/gabezurita)
 
-Play a random audio clip when a coding-agent turn ends, shared across Cursor, Claude
-Code, Gemini CLI, Codex CLI, and Google Antigravity from one script and one sound
-pool. Includes three locally generated CC0 starter sounds and a favorites/all toggle.
+Play a sound when you send a prompt and when a turn ends. Cursor, Claude Code,
+Gemini CLI, and Google Antigravity share one script and one sound pool. Codex CLI
+uses that same player through its `notify` command. The default mode, `session`,
+keeps each conversation on one sound pack. Setup generates three CC0 starter
+sounds and does not download a catalog.
 
 ## Quick start
 
@@ -24,23 +26,28 @@ verification, customization, and uninstall instructions.
 
 ## What this is
 
-- `scripts/play-random-completion-sound.sh` - picks and plays one random clip from your
-  sounds root. Works directly with Cursor `stop`, Claude Code `Stop`, Gemini CLI
-  `AfterAgent`, and Google Antigravity `Stop` hooks, which run a shell command with
-  JSON on stdin.
-- `scripts/codex-notify.sh` - adapts Codex CLI's argument-based `notify` command to the
-  shared player's stdin contract.
-- `scripts/sound-mode.sh` - toggles between session (sticky 1 unit per conversation), favorites, and full pool modes, with instant mute/unmute control (`mute`, `unmute`, `toggle-mute`, `status`).
-- `ui/AgentSoundsMenu.swift` - ultra-lightweight native macOS Menu Bar status item (`AgentDashboard.app`, ~160 KB, ~15 MB RAM, 0% CPU idle) combining 1-click sound controls (mute toggle, sound mode selection, favorites curation) with live **AIQuotas** telemetry. In the background, it queries `~/.agents/scripts/ai_quota_collector.py` (cached to `/tmp/ai_quota_collector_cache.json`, 60s TTL) to render a formatted status table with progress meters, reset countdowns, and warning/critical threshold alerts across Cursor, Google Antigravity, OpenAI Codex, and Claude Code.
-- `integrations/alfred/` - Alfred 5 Workflow (`snd` keyword) for keyboard-driven mute toggle, favorites search, and sound management.
-- `scripts/fetch-completion-sounds.sh` (`soundfetch`) - downloads curated sound sets (e.g. classical RTS, sci-fi builders, hero shooters) into `~/sounds/`.
-- Cross-platform playback: `afplay` (macOS), falling back to `paplay` or `aplay` (Linux).
+- `scripts/play-random-completion-sound.sh` picks and plays one clip. Cursor, Claude
+  Code, Gemini CLI, and Antigravity call it on both the prompt-send hook and the
+  turn-complete hook. It reads JSON on stdin and classifies the event. See
+  [Configuration](#configuration).
+- `scripts/codex-notify.sh` drops Codex's notification argument and sends `{}` to the
+  player. That play has no session id, so it does not stick a sound pack, and it
+  shares the session-less cooldown with other session-less plays.
+- `scripts/sound-mode.sh` (`soundmode`) sets the sticky, random, mute, and locked-pack
+  modes under [Favorites and mode](#favorites-and-mode).
+- `ui/AgentSoundsMenu.swift` is the macOS menu-bar app. The bundle is
+  `AgentDashboard.app` and the menu title is Agent Dashboard. Clicking the icon opens
+  the menu. See [Agent Dashboard and Alfred](#agent-dashboard-and-alfred).
+- `integrations/alfred/` is an Alfred 5 workflow opened with the `snd` keyword.
+- `scripts/fetch-completion-sounds.sh` (`soundfetch`) downloads sets from a manifest
+  into the sounds root. The committed manifest contains only `kenney-ui`.
+- Playback order is under [Configuration](#configuration).
 
 ## Why
 
-Several projects already play a sound on agent completion for one tool or the other
-(see Prior art below). None combine one script wired into both tools' hook systems at
-once with a favorites/all toggle for curating subsets of a larger pool.
+Other projects play a sound when one agent finishes. This one uses the same player
+for Cursor, Claude Code, Gemini CLI, and Antigravity, adapts Codex through `notify`,
+and can keep a conversation on one sound pack.
 
 ## Manual setup
 
@@ -116,15 +123,56 @@ scrape extension UI state or depend on private APIs. See the upstream contracts 
 
 ## Configuration
 
-- `AGENT_SOUNDS_ROOT` - sounds root directory (default `~/sounds`).
-- `AGENT_COMPLETION_SOUND_DISABLE=1` - disable playback entirely.
-- `AGENT_COMPLETION_SOUND_VOLUME=0.3` - volume for `afplay` (`0.0`-`1.0`, default `0.45`).
-  Not used on the `paplay`/`aplay` fallback paths.
-- `AGENT_SOUND_COOLDOWN_SECS=15` - minimum duration / cooldown in seconds (default `15`).
-  Suppresses end sounds on quick turns where a start sound just played and throttles rapid
-  duplicate triggers. Set to `0` to disable cooldown.
-- `AGENT_SOUND_ACTIVE_WINDOW_SECS=7200` - window in seconds (default `7200` / 2h) for tracking
-  active concurrent session voice assignments.
+- `AGENT_SOUNDS_ROOT` - sounds root (default `~/sounds`).
+- `AGENT_COMPLETION_SOUND_DISABLE=1` - skip playback for that process. A preview play
+  ignores this. See [Mute](#mute).
+- `AGENT_COMPLETION_SOUND_PREVIEW=1` - ignore the `.disabled` sentinel and
+  `AGENT_COMPLETION_SOUND_DISABLE`. It does not ignore a `mute`, `off`, or `disabled`
+  value in `.mode`.
+- `AGENT_COMPLETION_SOUND_VOLUME` - `afplay` volume from `0.0` to `1.0` (default
+  `0.45`). `ffplay` uses the same value scaled to `0`–`100`. `paplay` and `aplay`
+  ignore it.
+- `AGENT_SOUND_COOLDOWN_SECS` - seconds (default `15`). `0` disables both the stop
+  cooldown and the 2 second start throttle below.
+- `AGENT_SOUND_ACTIVE_WINDOW_SECS` - seconds (default `7200`) used when avoiding a
+  pack another live conversation is already using.
+- `AGENT_SOUND_UNIT` - force one pack for the current process. It does not write
+  `.mode`.
+
+### When a sound plays
+
+The player classifies each call in this order:
+
+1. An invocation number greater than 1 (`invocationNum` or `invocation_num`) plays
+   nothing, even when the command line says start or stop.
+2. Invocation number 1, with no start or stop argument, is a start.
+3. A start or stop argument wins over the JSON.
+4. Otherwise a stop token (`terminationReason`, `executionNum`, `stop_reason`, or
+   `stop`) is a stop.
+5. Otherwise a start token (`userPrompt`, `beforeSubmitPrompt`, `userPromptSubmit`,
+   `beforeAgent`, or `prompt`) is a start.
+6. Otherwise the call is a stop. Empty JSON is this case.
+
+While the cooldown is greater than 0, a stop is skipped when that session played a
+start or any sound inside the window. A second start inside 2 seconds is also
+skipped. That 2 second gap is fixed.
+
+A call with no session id (`conversationId`, `conversation_id`, `session_id`, or
+`sessionId`) uses the shared session-less clock. Codex always takes that path.
+Setup's test sound uses it too, so a verify command in the next 15 seconds can be
+silent.
+
+### Playback
+
+When `python3` is on `PATH`, an `.ogg` clip uses `ffplay` if `ffplay` is on `PATH`.
+Any other clip, including `.ogg` without `ffplay`, tries `afplay -v`, then
+`paplay`, then `aplay`. Without `python3`, a machine with `setsid` tries `paplay`
+and then `aplay` and does not try `afplay`. Otherwise the player tries
+`afplay -v`, then `paplay`, then `aplay`. `paplay` and `aplay` ignore volume.
+
+If the chosen folders contain no supported audio and
+`/System/Library/Sounds/Glass.aiff` exists, that file plays. If it does not
+exist, the call stays silent.
 
 ### Extensible Profile Integration
 
@@ -141,85 +189,161 @@ download.
 
 ## Favorites and mode
 
-`favorites.txt` at the root of your sounds directory lists folder names, one per line; `#` starts a comment. `.mode` (also at the sounds root) holds the active playback mode. It is read fresh on every hook call, so switching modes or locking units takes effect immediately with no application restart required.
+`favorites.txt` at the sounds root lists folder names, one per line. `#` starts a
+comment. `.mode` holds the playback mode and is read on every call.
+
+`session` is the default. It sticks one favorites pack to each conversation. If
+`favorites.txt` is missing or contains only comments, that pool is every pack
+except `scratch` and folders whose names start with a dot. Setup appends `agent-completion-starter` only when
+`favorites.txt` already exists. `session-all` is its own sticky mode and draws
+from the full pool. `favorites` and `all` pick again on every play. A folder name
+in `.mode` locks every play to that pack.
+
+A play with no session id does not stick a pack. Search is the whole sounds root,
+or the favorites folders when the mode is `favorites` and that file exists.
 
 ### Sound modes
 
-| Command | Mode Name | Description |
-| --- | --- | --- |
-| `soundmode` | | Show active mode (default is `session`) |
-| `soundmode session` | `session` | **(Default)** Bind 1 random favorite unit (from `favorites.txt`) per conversation |
-| `soundmode session-all` | `session-all` | Bind 1 random unit from the full pool per conversation |
-| `soundmode favorites` | `favorites` | Randomize across all favorites on every single turn |
-| `soundmode all` | `all` | Randomize across the full pool on every single turn |
-| `soundmode mute` / `off` | `muted` | Mute completion audio immediately (sets `~/sounds/.disabled` sentinel) |
-| `soundmode unmute` / `on`| `active`| Unmute completion audio immediately (removes `~/sounds/.disabled`) |
-| `soundmode toggle-mute` | | Toggle between muted and active |
-| `soundmode status` | | Print human-readable playback mode, mute status, and favorites count |
-| `soundmode <unit-folder>`| `<unit-folder>` | Lock all sessions/turns to a specific unit (e.g. `kenney-ui`) |
-| `soundmode clear` | `clear` / `reset` | Clear all active session sticky bindings (forces re-picking on next turn) |
-| `soundmode toggle` | `toggle` | Cycle between `session` → `favorites` → `all` |
-
-Add a shell alias for convenience:
+| Command | What it writes |
+| --- | --- |
+| `soundmode` | Prints `.mode`, or `session` when the file is missing |
+| `soundmode session` | `session`. Also accepts `session-favorites` and `sticky` |
+| `soundmode session-all` | `session-all` |
+| `soundmode favorites` | `favorites`. Also accepts `turn-favorites` |
+| `soundmode all` | `all`. Also accepts `turn-all` |
+| `soundmode mute` | Creates `<sounds-root>/.disabled`. Also accepts `off` and `disable`. Does not change `.mode` |
+| `soundmode unmute` | Removes `.disabled`. Also accepts `on` and `enable`. Does not change `.mode` |
+| `soundmode toggle-mute` | Flips `.disabled`. Also accepts `toggle-sound` |
+| `soundmode status` | Prints mode, mute state, and favorites count |
+| `soundmode <folder>` | Writes that folder name into `.mode` when the folder exists |
+| `soundmode clear` | Deletes the session cache only. Also accepts `reset` and `clear-sessions` |
+| `soundmode toggle` | `session`, then `favorites`, then `all`, then `session`. From `session-all` or a locked folder, toggle writes `session` |
 
 ```bash
 alias soundmode="/absolute/path/to/agent-completion-sounds/scripts/sound-mode.sh"
 ```
 
-You can also force a specific unit for any shell/process by setting `export AGENT_SOUND_UNIT="kenney-ui"`.
+`AGENT_SOUND_UNIT` overrides the pack for the current process and does not write
+`.mode`.
 
-### macOS Menu Bar App & Alfred 5 Workflow
+### Mute
 
-For a frictionless macOS experience with zero terminal friction, this project includes an ultra-lightweight native Menu Bar Status Item and an Alfred 5 workflow that share the exact same filesystem state (`~/sounds/.disabled`, `~/sounds/.mode`, and `~/sounds/favorites.txt`).
+Playback stays quiet in three separate ways:
 
-#### 1. Native macOS Menu Bar App (`AgentDashboard.app`)
-- **Resource Footprint:** ~160 KB compiled binary, ~15 MB RAM, 0% CPU idle (pure AppKit, event-driven, zero external dependencies).
-- **Ambient Status:** Menu bar icon displays SF Symbols `speaker.wave.2.fill` (active) or `speaker.slash.fill` (muted).
-- **1-Click Mute Toggle:** Click the status icon to toggle mute on/off instantly without restarting IDEs or agent sessions.
-- **Dynamic Favorites Checklist:** Lists every sound pack subfolder in `~/sounds/` with checkmarks `✓` matching `favorites.txt`. Clicking any pack adds or removes it immediately.
-- **Adding Sounds:**
-  - **Option A (Open in Finder):** Press `Cmd+O` to open `~/sounds/` for direct drag-and-drop.
-  - **Option B (Import Files or Folder):** Press `Cmd+I` for a native macOS file picker. Selecting a folder copies the sound pack; selecting individual audio clips prompts for a pack name and imports them.
-  - **Option C (Download Curated Packs):** Choose any pack from the menu to download royalty-free sets in the background.
-- **Play Test Sound:** Press `Cmd+T` to preview a completion sound immediately.
+- `<sounds-root>/.disabled`. `soundmode mute` and the menu's Sounds Enabled item
+  change this file.
+- `.mode` set to `mute`, `off`, or `disabled`. `soundmode unmute` does not clear
+  that. Choosing `session`, `session-all`, `favorites`, `all`, or a folder name
+  replaces the file. The menu's Playback Mode submenu can write the four named
+  modes. It cannot write a folder lock.
+- `AGENT_COMPLETION_SOUND_DISABLE=1` for the current process.
 
-**Build and Run:**
-```bash
-./scripts/build-menu-bar-app.sh --link --start
-```
-*(Optional: add `--install-launchd` to launch automatically upon login).*
+Preview skips the sentinel and the environment variable. It still honors a mute
+value in `.mode`.
 
-#### 2. Alfred 5 Workflow (`Agent-Completion-Sounds.alfredworkflow`)
-Control completion sounds directly from your keyboard using Alfred 5:
-- Type `snd` to view current status, mute/unmute, and quick actions.
-- Type `snd fav <name>` to search sound packs and toggle favorite status with Enter.
-- Type `snd mode <session|favorites|all>` to switch playback mode.
-- Type `snd test` to trigger a test sound.
-- Type `snd open` to open `~/sounds` in Finder.
+### Sticky packs
 
-**Package and Install:**
+In `session` and `session-all`, a conversation id sticks one pack for later plays
+in that conversation. The cache lives in `${TMPDIR:-/tmp}/agent-sound-sessions`.
+On macOS that is the per-user temporary directory, not a literal `/tmp`, unless
+`TMPDIR` is unset. `soundmode clear` and the menu's Reset Active Sessions delete
+that directory and leave `.mode` and `.disabled` alone.
+
+A new sticky pick skips packs bound to other conversations inside
+`AGENT_SOUND_ACTIVE_WINDOW_SECS`. Each play refreshes that conversation's
+timestamp. If every favorite is already in use, the pick expands to the full
+pool. If every pack is in use, it picks the one whose other conversation was
+active least recently.
+
+The agent skill `agent-completion-sounds` can suggest a theme name such as
+`sc1-medic`. Those names are not in the shipped `soundfetch` manifest, and setup
+does not install them.
+
+## Agent Dashboard and Alfred
+
+Setup does not build the menu app, install its login agent, or package the Alfred
+workflow.
+
+### Menu bar
+
+`./scripts/build-menu-bar-app.sh --link --start` builds `build/AgentDashboard.app`
+and can link `~/.local/bin/agent-sounds-menu`. Add `--install-launchd` to write
+`~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist`. The bundle display name
+is Agent Dashboard.
+
+Clicking the icon opens the menu. It does not mute. The icon is a drawn talking
+bot, image only, with no SF Symbol. The default style is `bot` (sound-wave arcs).
+Icon Style can switch to `bot-wave` (bars). Muting keeps the bot and drops the
+sound marks. Sounds Enabled toggles the `.disabled` sentinel.
+
+The menu can switch among `session`, `session-all`, `favorites`, and `all`.
+Favorites lists Select All as Favorites, Clear All Favorites, and one item per
+pack. It can import a folder or audio files. Reset Active Sessions clears the
+sticky cache.
+Play Test Sound (`Cmd+T`) sets `AGENT_COMPLETION_SOUND_PREVIEW=1`,
+`AGENT_COMPLETION_SOUND_DISABLE=0`, and cooldown `0`, then plays a stop for
+conversation id `test-ui-ping`. The preview plays while `.disabled` exists, can
+stick `test-ui-ping`, and does not remove `.disabled`, so later agent turns stay
+silent. It still honors a `mute`, `off`, or `disabled` value in `.mode`. If the
+player script is missing, the menu falls back to `afplay` on a random clip and
+does not set those variables.
+
+Open in Finder (`Cmd+O`) opens `~/sounds` when that directory exists. Otherwise
+it opens `AGENT_SOUNDS_ROOT`.
+
+Download Curated Packs lists sets from `scripts/completion-sound-sets.default.txt`
+only. A named item passes that name to the fetcher. Download All Curated Sets
+calls the fetcher with an empty name, downloads nothing, and exits 0. The menu
+still shows a download-complete notification.
+
+### Quotas
+
+Quota rows are optional. The menu reads `/tmp/ai_quota_collector_cache.json`.
+A provider block appears only when that provider's status is `ok`. Setup does not
+install `~/.agents/scripts/ai_quota_collector.py` or a dashboard server. Force Refresh
+runs that script only when the file exists. Open Web Dashboard opens
+`http://localhost:3333` and does not start a server.
+
+Cursor, Antigravity, and Codex show percent
+meters. At or below 15% the meter is critical. Above 15% and at or below 40% it
+is a warning. Claude, Copilot, and OpenCode show local telemetry counts.
+OpenRouter shows credits and spend. A missing spend limit is displayed as $10.
+The menu-bar icon stays an image. Copilot in this menu is telemetry. Copilot and
+the Codex VS Code extension still have no completion-sound hook. See the support
+table above.
+
+### Alfred
+
+Package and open the workflow:
+
 ```bash
 ./scripts/package-alfred-workflow.sh
 open "build/Agent-Completion-Sounds.alfredworkflow"
 ```
 
-### Agent Identity (Sticky Sessions & Unique Voices)
+Type `snd` and pick a row. `snd fav`, `snd mode`, and `snd fetch` are the filter
+prefixes. `snd toggle`, `snd test`, and `snd open` are not typed commands. The
+bare `snd` list includes mute, a test sound, mode, favorites, Finder, and
+download. `snd mode` offers `session`, `session-all`, `favorites`, and `all`.
 
-By default (`session` mode), the player automatically assigns a sticky favorite sound unit to each unique agent session/conversation. This gives the agent in a given conversation thread a consistent "voice" or "identity" across all turns in that session.
+The fetch list reads `scripts/completion-sound-sets.default.txt` and stops after
+the first set name. Download All runs `soundfetch` with no arguments, so it
+downloads every set in the manifest that command resolves:
+`COMPLETION_SOUND_MANIFEST`, else `scripts/completion-sound-sets.txt` when that
+file exists, else the default manifest.
 
-#### How it works:
-- **Conversation Tracking:** The player tracks unique session IDs or conversation threads across the supported agent surfaces.
-- **Collision-Free Voice Selection:** When picking a voice for a new session, the player inspects recently active sessions in `/tmp/agent-sound-sessions/` (active within `AGENT_SOUND_ACTIVE_WINDOW_SECS`, default: 2 hours). Units actively bound to other concurrent sessions are excluded from the selection pool, ensuring each agent running in parallel has a distinct, recognizable voice.
-- **Adaptive Fallback:** If all favorite units are currently bound to active sessions, selection automatically expands to available units from the full pool. If all units across the library are active, it selects the unit whose session was least recently active.
-- **Activity Refresh:** On every turn, active sessions touch their cache file so their activity timestamp remains accurate.
-- **Persistent Voice:** All future turns in that specific session play sounds exclusively from that sticky unit's folder.
-- **Session Reset:** Run `soundmode clear` to clear active sticky bindings across all conversations. On the next turn, a new random favorite will be assigned.
+The Alfred test row sets only `AGENT_COMPLETION_SOUND_DISABLE=0` and plays a stop
+for conversation id `alfred-test`. The `.disabled` sentinel and the cooldown
+still apply. The play can stick `alfred-test`. It does not set
+`AGENT_COMPLETION_SOUND_PREVIEW`.
 
-#### Autonomous Agent Skill
-If you use this system with an AI agent capable of using project-specific skills, there is a built-in agent skill called `agent-completion-sounds`. When activated:
-- **Thematic Suggestions:** The agent can assess its current focus (e.g. debugging vs. heavy compilation) and suggest changing its own session identity to a matching theme (e.g. `sc1-medic` for debugging, `sc1-battlecruiser` for compilation).
-- **Collision Avoidance:** The suggestion engine automatically queries active sessions to ensure it suggests a sound unit that is not currently bound to another active conversation.
-- **Self-Modification:** With user approval, the agent can write its selected identity folder directly to its active session unit file to immediately adopt its new persona.
+The workflow scripts look for this repository two directories above themselves.
+After Alfred imports the packaged workflow, that path is not the clone, so mute,
+test, mode, and fetch cannot find the scripts. Favorites edits and Finder use
+the sounds directory and still run. Leave the workflow at `integrations/alfred/`
+inside the clone when you need the script-backed actions. Alfred's Finder action
+opens `AGENT_SOUNDS_ROOT` or `~/sounds`. It does not prefer a literal `~/sounds`
+the way the menu does.
 
 ## Prior art
 
