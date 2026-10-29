@@ -64,7 +64,7 @@ Other general-purpose sources include [Pixabay Sound Effects](https://pixabay.co
 
 The shipped manifest, `scripts/completion-sound-sets.default.txt`, contains one set: `kenney-ui` (five Kenney CC0 clicks). Theme names in the agent skill are suggestions, not downloadable sets, and setup does not install them.
 
-`soundfetch` reads `COMPLETION_SOUND_MANIFEST` when set, otherwise `scripts/completion-sound-sets.txt` when that file exists, otherwise the default manifest. The menu and the Alfred set list read the default file only. See [Agent Dashboard and Alfred](README.md#agent-dashboard-and-alfred).
+`soundfetch` reads `COMPLETION_SOUND_MANIFEST` when set, otherwise `scripts/completion-sound-sets.txt` when that file exists, otherwise the default manifest. The menu and the Alfred set list read the default file only. See [Agent Dashboard and Alfred](docs/menu-and-alfred.md).
 
 When `ffmpeg` is on `PATH`, `.ogg` downloads are converted to `.wav`.
 
@@ -77,7 +77,7 @@ soundfetch
 
 ## Customize
 
-`session` is the default: one favorite pack per conversation. The README has the full mode, mute, and sticky-pack rules.
+`session` is the default: one favorite pack per conversation. Mode, mute, and sticky-pack rules are in [Modes](docs/modes.md).
 
 ```bash
 ./scripts/sound-mode.sh session      # bind one random favorite pack per conversation
@@ -94,9 +94,9 @@ soundfetch
 
 ### macOS menu and Alfred
 
-Build and launch for `AgentDashboard.app`, and the Alfred keyword, are in [Agent Dashboard and Alfred](README.md#agent-dashboard-and-alfred).
+Build and launch for `AgentDashboard.app`, and the Alfred keyword, are in [Agent Dashboard and Alfred](docs/menu-and-alfred.md).
 
-Volume, cooldown, and the sounds root are in the [README configuration section](README.md#configuration).
+Volume, cooldown, and the sounds root are in [Configuration](docs/configuration.md).
 
 ## Uninstall
 

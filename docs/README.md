@@ -1,6 +1,15 @@
 # Documentation Directory (`docs/`)
 
-This directory contains repo documentation structured according to our standard engineering taxonomy.
+User guides live next to this file. The folders below are for engineering artifacts: explorations, RFCs, evaluations, tech specs, ADRs, plans, and solutions.
+
+| Guide | What it covers |
+| --- | --- |
+| [Getting started](../GETTING_STARTED.md) | Requirements, what setup changes, verify, add sounds, uninstall |
+| [Manual setup](manual-setup.md) | Hook files and script links without running setup |
+| [Agents](agents.md) | Which surfaces can play a sound |
+| [Configuration](configuration.md) | When a sound plays, volume, playback |
+| [Modes](modes.md) | Favorites, mute, sticky packs |
+| [Agent Dashboard and Alfred](menu-and-alfred.md) | Menu bar, quotas, `snd` workflow |
 
 ---
 
