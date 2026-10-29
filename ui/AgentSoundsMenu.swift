@@ -943,13 +943,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Quit
-        let quitItem = NSMenuItem(title: "Quit Agent Dashboard", action: #selector(quitAction), keyEquivalent: "q")
-        quitItem.target = self
-        menu.addItem(quitItem)
-
-        menu.addItem(NSMenuItem.separator())
-
         // MARK: ── 2. AI Quotas Section ──
         let payload = QuotaManager.shared.getQuotaData()
         let providers = payload?["providers"] as? [String: Any] ?? [:]
@@ -1253,7 +1246,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-
+        // Quit
+        let quitItem = NSMenuItem(title: "Quit Agent Dashboard", action: #selector(quitAction), keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
     }
 
     private func modeDisplayName(_ id: String) -> String {
