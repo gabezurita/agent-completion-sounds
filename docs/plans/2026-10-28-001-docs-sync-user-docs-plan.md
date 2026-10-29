@@ -26,11 +26,11 @@ User docs will match the current player, `AgentDashboard.app`, the Kenney-only d
 
 ### Problem Frame
 
-`README.md` was last aligned when the menu was documented as an SF Symbol that toggles mute, with a 160 KB binary and RTS sound packs to download. The code has since become a drawn-bot menu titled Agent Dashboard, a Kenney UI catalog, prompt-send hooks, and a cooldown classifier. `GETTING_STARTED.md` still describes setup as completion hooks only, and a Mixkit sentence is cut off by the soundfetch heading. Readers who follow those pages get the wrong icon, the wrong mute gesture, the wrong downloads, and the wrong idea of when a sound plays.
+Readers who follow the current pages get the wrong icon, the wrong mute gesture, the wrong downloads, and the wrong idea of when a sound plays. `README.md` was last aligned when the menu was documented as an SF Symbol that toggles mute, with a 160 KB binary and RTS sound packs to download. The code has since become a drawn-bot menu titled Agent Dashboard, a Kenney UI catalog, prompt-send hooks, and a cooldown classifier. `GETTING_STARTED.md` still describes setup as completion hooks only, and a Mixkit sentence is cut off by the soundfetch heading.
 
 ### Key Decisions
 
-- Document current behavior and leave the player, hooks, menu app, Alfred actions, and fetcher unchanged. (session-settled: user-directed — chosen over changing behavior where the old docs promised something else, and over brainstorming the product first: the request was to correct documentation drift)
+- Document current behavior. Leave the player, hooks, menu app, Alfred actions, and fetcher unchanged. (session-settled: user-directed. Chosen over changing behavior where the old docs promised something else, and over brainstorming the product first. The request was to correct documentation drift.)
   - **Governs:** R1 through R21.
 
 ### Requirements
@@ -108,7 +108,7 @@ In scope: the three user-facing texts named in the objective, including the clai
 
 - KTD1. `README.md` owns runtime behavior, modes, the menu, the quota menu, and the Alfred command summary. `GETTING_STARTED.md` owns install, verify, the soundfetch CLI, and uninstall, and links to the README instead of restating the menu, the size claim, or `snd` syntax. `integrations/alfred/info.plist` owns the in-Alfred readme and matches R16.
   - **Rationale:** The same claim in two pages is how the icon, the catalog, and the hook list drifted. One page states each rule.
-  - **Governs:** the file split for R1 through R20. Instantiates the Key Decision.
+  - **Governs:** the file split for R1 through R20. Applies the key decision above.
 - KTD2. Delete the footprint numbers. Do not write a new kilobyte, megabyte, or CPU figure.
   - **Rationale:** Nothing in source or CI records 160 KB, 15 MB, or 0% CPU. `build/` is gitignored, and `swiftc -O` output moves. A local binary size would become the next stale number.
 - KTD3. State the classifier as R2, using the keys the script matches. Do not add a sentence that Gemini `AfterAgent` is a second start, or that Antigravity invocation `0` is a stop, unless a fixture under `tests/` or `hooks/` shows that payload.

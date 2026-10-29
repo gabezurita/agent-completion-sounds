@@ -140,18 +140,16 @@
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>Control coding-agent completion sounds from Alfred. Type snd and pick a row.
+	<string>After Alfred imports the packaged workflow, mute, test, mode, and fetch look two folders above the workflow, not in this clone. Favorites and Finder still use the sounds directory. Keep the workflow at integrations/alfred inside the clone when you need the script-backed actions.
 
-Bare snd lists mute, a test sound, playback mode, favorites, Finder, and download.
+Type snd and pick a row. Bare snd lists mute, a test sound, playback mode, favorites, Finder, and download.
 
 Prefixes:
 - snd fav, then a pack name: add or remove that pack in favorites
 - snd mode: session, session-all, favorites, or all
 - snd fetch: the first set in scripts/completion-sound-sets.default.txt, or Download All
 
-Download All runs soundfetch with no arguments. soundfetch reads COMPLETION_SOUND_MANIFEST, else scripts/completion-sound-sets.txt when that file exists, else the default manifest. The fetch list itself reads only the default manifest and stops after the first set name.
-
-After Alfred imports the packaged workflow, mute, test, mode, and fetch look for this repository two folders above the workflow and do not find it. Favorites and Finder still use the sounds directory. Leave the workflow at integrations/alfred inside the clone when you need the script-backed actions.</string>
+Download All runs soundfetch with no arguments. That command reads COMPLETION_SOUND_MANIFEST, else scripts/completion-sound-sets.txt when that file exists, else the default manifest. The fetch list itself reads only the default manifest and stops after the first set name.</string>
 	<key>uidata</key>
 	<dict>
 		<key>B1000000-0000-0000-0000-000000000001</key>
