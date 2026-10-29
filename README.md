@@ -3,7 +3,7 @@
 [![CI](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml/badge.svg)](https://github.com/gabezurita/agent-completion-sounds/actions/workflows/ci.yml)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow.svg)](https://buymeacoffee.com/gabezurita)
 
-One script plays a sound when you send a prompt and when a turn ends. Cursor, Claude Code, Gemini CLI, and Google Antigravity call that script. Codex CLI uses the same player through its `notify` command. The default mode, `session`, keeps each conversation on one sound pack. Setup writes three CC0 starter sounds and does not download a catalog.
+One script plays a sound when you send a prompt and when a turn ends. It runs universally across Cursor, Claude Code, Gemini CLI, Google Antigravity, and Codex CLI.
 
 ## Quick start
 
