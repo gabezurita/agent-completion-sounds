@@ -22,4 +22,13 @@ else
   exit 1
 fi
 
+echo "=== Test 3: Rank quota pools from the 29 Oct 2026 snapshot ==="
+SWIFTC=$(command -v swiftc || echo "/usr/bin/swiftc")
+SUGGESTION_SRC="${REPO_ROOT}/ui/QuotaPoolSuggestion.swift"
+RANK_TEST_SRC="${REPO_ROOT}/tests/quota-pool-suggestion-test.swift"
+RANK_TEST_BIN="${REPO_ROOT}/build/quota-pool-suggestion-test"
+"${SWIFTC}" "${SUGGESTION_SRC}" "${RANK_TEST_SRC}" -o "${RANK_TEST_BIN}"
+"${RANK_TEST_BIN}"
+echo "PASS: quota pool ranking matches the snapshot"
+
 echo "quota-manager-test: ALL PASS"
