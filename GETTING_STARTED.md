@@ -113,6 +113,6 @@ Remove the `~/.local/bin` links setup created: `play-random-completion-sound`, `
 
 You can remove `~/sounds/agent-completion-starter` and its line in `~/sounds/favorites.txt`.
 
-Quit Agent Dashboard. If you installed login launch, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist` and the `~/.local/bin/agent-sounds-menu` symlink. Remove the workflow from Alfred.
+Quit Agent Dashboard. If you installed login launch, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist` and the `~/.local/bin/agent-sounds-menu` symlink. If you installed the main-branch refresh, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.refresh.plist` and `~/.local/share/agent-completion-sounds`. Remove the workflow from Alfred.
 
 The `.bak` files from the latest setup are references. Restoring one wholesale can discard newer unrelated configuration.

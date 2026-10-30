@@ -24,6 +24,16 @@ Build and launch:
 
 That writes `build/AgentDashboard.app` and can link `~/.local/bin/agent-sounds-menu`. Add `--install-launchd` to write `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist`. The bundle display name is Agent Dashboard.
 
+To keep that local app on `origin/main`, install the refresh agent:
+
+```bash
+./scripts/refresh-menu-bar-app.sh --install
+```
+
+Every 60 seconds it fetches `origin/main` in a side clone at `~/.local/share/agent-completion-sounds/src`. When `main` has moved, it rebuilds `AgentDashboard.app` into this checkout's `build/` directory. If Agent Dashboard is running, the agent quits it and opens the new bundle. If it is not running, the bundle is replaced and left quit. The checkout's branch stays as it is. A failed fetch or a failed build leaves the running app in place. GitHub Actions cannot do this step, because CI runs on Ubuntu and cannot quit the Mac app.
+
+Remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.refresh.plist` to stop the refresh. The side clone is `~/.local/share/agent-completion-sounds`.
+
 ## Quotas
 
 Quota rows are optional. The menu reads `/tmp/ai_quota_collector_cache.json`. A provider block appears only when that provider's status is `ok`. Setup does not install `~/.agents/scripts/ai_quota_collector.py` or a dashboard server. Force Refresh runs that script only when the file exists. Open Web Dashboard opens `http://localhost:3333` and does not start a server.
