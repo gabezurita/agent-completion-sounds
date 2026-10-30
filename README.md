@@ -13,7 +13,7 @@ Clone the repository somewhere permanent, then run:
 ./scripts/setup.sh
 ```
 
-Setup writes three original CC0 WAV chimes, merges the five supported hook configurations, and plays a test sound. Existing configuration files are kept and backed up before a change. Restart any open agent sessions afterward.
+Setup writes three original CC0 WAV chimes, merges the five supported hook configurations, and plays a test sound. On macOS it then builds the Agent Dashboard, launches the menu, and starts the quota page at `http://127.0.0.1:3333`. On Linux it installs sounds only. Existing configuration files are kept and backed up before a change. Restart any open agent sessions afterward.
 
 ## Guides
 

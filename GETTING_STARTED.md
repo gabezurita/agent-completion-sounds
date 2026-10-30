@@ -19,7 +19,7 @@ cd agent-completion-sounds
 ./scripts/setup.sh
 ```
 
-Setup does not build `AgentDashboard.app`, load its login agent, or package the Alfred workflow.
+On macOS, setup then runs `scripts/setup-dashboard.sh`. That builds `AgentDashboard.app` with the quota collector inside, launches the menu, and starts the quota page at `http://127.0.0.1:3333`. On Linux, setup stops after the sounds install. Setup does not load a login agent or package the Alfred workflow.
 
 1. Links `play-random-completion-sound.sh`, `play-random-completion-sound`, `sound-mode.sh`, `soundmode`, `codex-notify.sh`, `fetch-completion-sounds.sh`, and `soundfetch` into `~/.local/bin/`.
 2. Writes three CC0 WAV chimes, `complete-bright.wav`, `complete-calm.wav`, and `complete-soft.wav`, in `~/sounds/agent-completion-starter/`. They are original project output under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
@@ -94,7 +94,7 @@ soundfetch
 
 ### macOS menu and Alfred
 
-Build and launch for `AgentDashboard.app`, and the Alfred keyword, are in [Agent Dashboard and Alfred](docs/menu-and-alfred.md).
+On a Mac, `./scripts/setup.sh` continues into the dashboard. `./scripts/setup-dashboard.sh` does that step on its own. Alfred stays in [Agent Dashboard and Alfred](docs/menu-and-alfred.md).
 
 Volume, cooldown, and the sounds root are in [Configuration](docs/configuration.md).
 
@@ -113,6 +113,6 @@ Remove the `~/.local/bin` links setup created: `play-random-completion-sound`, `
 
 You can remove `~/sounds/agent-completion-starter` and its line in `~/sounds/favorites.txt`.
 
-Quit Agent Dashboard. If you installed login launch, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist` and the `~/.local/bin/agent-sounds-menu` symlink. If you installed the main-branch refresh, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.refresh.plist` and `~/.local/share/agent-completion-sounds`. Remove the workflow from Alfred.
+Quit Agent Dashboard. On macOS, stop the quota page setup started on `127.0.0.1:3333`. If you installed login launch, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist` and the `~/.local/bin/agent-sounds-menu` symlink. If you installed the main-branch refresh, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.refresh.plist` and `~/.local/share/agent-completion-sounds`. Remove the workflow from Alfred.
 
 The `.bak` files from the latest setup are references. Restoring one wholesale can discard newer unrelated configuration.

@@ -9,6 +9,9 @@ trap 'rm -rf "${TEST_ROOT}"' EXIT
 TEST_HOME="${TEST_ROOT}/home"
 TEST_BIN="${TEST_ROOT}/bin"
 PLAY_LOG="${TEST_ROOT}/played.log"
+DASH_LOG="${TEST_ROOT}/dashboard-calls.log"
+REAL_UNAME=$(command -v uname)
+: > "${DASH_LOG}"
 mkdir -p "${TEST_HOME}/.cursor" "${TEST_HOME}/.claude" "${TEST_HOME}/.gemini/config" \
   "${TEST_HOME}/.codex" "${TEST_HOME}/sounds" "${TEST_BIN}"
 
@@ -55,6 +58,7 @@ run_setup() {
     PATH="${TEST_BIN}:${PATH}" \
     PLAY_LOG="${PLAY_LOG}" \
     AGENT_SOUNDS_ROOT="${TEST_HOME}/sounds" \
+    AGENT_DASHBOARD_STUB_LOG="${DASH_LOG}" \
     "${REPO_ROOT}/scripts/setup.sh"
 }
 
@@ -196,6 +200,7 @@ grep -q '/agent-completion-starter/.*\.wav$' "${PLAY_LOG}"
 
 FRESH_HOME="${TEST_ROOT}/fresh-home"
 HOME="${FRESH_HOME}" PATH="${TEST_BIN}:${PATH}" PLAY_LOG="${PLAY_LOG}" \
+  AGENT_DASHBOARD_STUB_LOG="${DASH_LOG}" \
   "${REPO_ROOT}/scripts/setup.sh" >/dev/null
 [[ -f "${FRESH_HOME}/.cursor/hooks.json" ]]
 [[ -f "${FRESH_HOME}/.claude/settings.json" ]]
@@ -210,6 +215,7 @@ mkdir -p "${INVALID_HOME}/.cursor" "${INVALID_HOME}/.gemini"
 printf '%s\n' '{"preserved":"before"}' > "${INVALID_HOME}/.cursor/hooks.json"
 printf '%s\n' '{invalid' > "${INVALID_HOME}/.gemini/settings.json"
 if HOME="${INVALID_HOME}" PATH="${TEST_BIN}:${PATH}" PLAY_LOG="${PLAY_LOG}" \
+  AGENT_DASHBOARD_STUB_LOG="${DASH_LOG}" \
   "${REPO_ROOT}/scripts/setup.sh" >/dev/null 2>&1; then
   printf '%s\n' 'expected invalid JSON setup to fail' >&2
   exit 1
@@ -221,10 +227,41 @@ mkdir -p "${NO_PLAYER_BIN}"
 ln -s "$(command -v python3)" "${NO_PLAYER_BIN}/python3"
 ln -s "$(command -v dirname)" "${NO_PLAYER_BIN}/dirname"
 if HOME="${TEST_ROOT}/no-player-home" PATH="${NO_PLAYER_BIN}" \
+  AGENT_DASHBOARD_STUB_LOG="${DASH_LOG}" \
   /bin/bash "${REPO_ROOT}/scripts/setup.sh" >/dev/null 2>&1; then
   printf '%s\n' 'expected setup without an audio player to fail' >&2
   exit 1
 fi
 [[ ! -e "${TEST_ROOT}/no-player-home/.cursor/hooks.json" ]]
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  grep -q '^setup-dashboard$' "${DASH_LOG}"
+else
+  [[ ! -s "${DASH_LOG}" ]]
+fi
+
+LINUX_HOME="${TEST_ROOT}/linux-home"
+LINUX_BIN="${TEST_ROOT}/linux-bin"
+LINUX_LOG="${TEST_ROOT}/linux-dashboard.log"
+mkdir -p "${LINUX_BIN}"
+cat > "${LINUX_BIN}/uname" <<EOF
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "-s" ]]; then
+  printf '%s\n' Linux
+  exit 0
+fi
+exec ${REAL_UNAME} "\$@"
+EOF
+chmod +x "${LINUX_BIN}/uname"
+: > "${LINUX_LOG}"
+HOME="${LINUX_HOME}" \
+  PATH="${LINUX_BIN}:${TEST_BIN}:${PATH}" \
+  PLAY_LOG="${PLAY_LOG}" \
+  AGENT_SOUNDS_ROOT="${LINUX_HOME}/sounds" \
+  AGENT_DASHBOARD_STUB_LOG="${LINUX_LOG}" \
+  "${REPO_ROOT}/scripts/setup.sh" >/dev/null
+[[ ! -s "${LINUX_LOG}" ]]
+[[ -f "${LINUX_HOME}/.cursor/hooks.json" ]]
+[[ -f "${LINUX_HOME}/sounds/agent-completion-starter/complete-bright.wav" ]]
 
 printf '%s\n' 'one-command setup: PASS'

@@ -1,6 +1,6 @@
 # Agent Dashboard and Alfred
 
-A click opens the menu. Sounds Enabled is the mute control. Setup does not build this app, install its login agent, or package the Alfred workflow.
+A click opens the menu. Sounds Enabled is the mute control. On macOS, `./scripts/setup.sh` continues into the dashboard install below. Linux setup does not. Setup does not install the login agent or package the Alfred workflow.
 
 ## Menu bar
 
@@ -16,7 +16,13 @@ Open in Finder (`Cmd+O`) opens `~/sounds` when that directory exists. Otherwise 
 
 Download Curated Packs lists sets from `scripts/completion-sound-sets.default.txt` only. A named item passes that name to the fetcher. Download All Curated Sets calls the fetcher with an empty name, downloads nothing, and exits 0. The menu still shows a download-complete notification.
 
-Build and launch:
+On macOS, `./scripts/setup.sh` runs the dashboard install after the sounds install. Run it alone to rebuild and relaunch:
+
+```bash
+./scripts/setup-dashboard.sh
+```
+
+That builds `AgentDashboard.app` with the quota collector inside, launches the menu, and starts the page at `http://127.0.0.1:3333`. `build-menu-bar-app.sh` builds the same bundle when you want the `~/.local/bin` link or the login agent:
 
 ```bash
 ./scripts/build-menu-bar-app.sh --link --start
@@ -36,7 +42,7 @@ Remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.refresh.plist` to stop
 
 ## Quotas
 
-Quota rows are optional. The menu reads `/tmp/ai_quota_collector_cache.json`. A provider block appears only when that provider's status is `ok`. Setup does not install `~/.agents/scripts/ai_quota_collector.py` or a dashboard server. Force Refresh runs that script only when the file exists. Open Web Dashboard opens `http://localhost:3333` and does not start a server.
+Quota rows are optional. The menu reads `/tmp/ai_quota_collector_cache.json`. A provider block appears only when that provider's status is `ok`. Force Refresh runs `ai_quota_collector.py` shipped inside `AgentDashboard.app`. The dashboard install starts that collector on `127.0.0.1` port 3333. Open Web Dashboard opens `http://localhost:3333`.
 
 Cursor, Antigravity, and Codex show percent meters. At or below 15% the meter is critical. Above 15% and at or below 40% it is a warning. Claude, Copilot, and OpenCode show local telemetry counts. OpenRouter shows a credits meter when the cache has one, plus monthly spend. A missing spend limit is displayed as $10. Copilot in this menu is telemetry. Hook support for Copilot and the Codex VS Code extension is in [Agents](agents.md).
 

@@ -311,3 +311,7 @@ printf '%s\n' '{}' | "${PLAYER}" >/dev/null
 printf 'Installed three CC0 starter sounds in %s\n' "${SOUNDS_ROOT}/agent-completion-starter"
 printf '%s\n' 'Configured Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigravity.'
 printf '%s\n' 'Played a completion sound. Restart open agent sessions to load the new hooks.'
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  "${SCRIPT_DIR}/setup-dashboard.sh"
+fi
