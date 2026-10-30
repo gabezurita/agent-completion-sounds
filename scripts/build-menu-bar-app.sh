@@ -10,6 +10,7 @@ BUILD_DIR="${REPO_ROOT}/build"
 APP_NAME="AgentDashboard"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 SWIFT_SOURCE="${REPO_ROOT}/ui/AgentSoundsMenu.swift"
+SUGGESTION_SOURCE="${REPO_ROOT}/ui/QuotaPoolSuggestion.swift"
 BIN_NAME="AgentSoundsMenu"
 
 usage() {
@@ -55,7 +56,7 @@ mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 
 # Compile with optimization
-"${SWIFTC}" -O "${SWIFT_SOURCE}" -o "${APP_BUNDLE}/Contents/MacOS/${BIN_NAME}"
+"${SWIFTC}" -O "${SUGGESTION_SOURCE}" "${SWIFT_SOURCE}" -o "${APP_BUNDLE}/Contents/MacOS/${BIN_NAME}"
 
 # Copy resources and helper scripts into bundle
 if [[ -f "${SCRIPT_DIR}/completion-sound-sets.default.txt" ]]; then

@@ -30,6 +30,8 @@ Quota rows are optional. The menu reads `/tmp/ai_quota_collector_cache.json`. A 
 
 Cursor, Antigravity, and Codex show percent meters. At or below 15% the meter is critical. Above 15% and at or below 40% it is a warning. Claude, Copilot, and OpenCode show local telemetry counts. OpenRouter shows a credits meter when the cache has one, plus monthly spend. A missing spend limit is displayed as $10. Copilot in this menu is telemetry. Hook support for Copilot and the Codex VS Code extension is in [Agents](agents.md).
 
+Under the quota header, the menu suggests one pool among Antigravity Gemini, Antigravity Claude & GPT, Antigravity Argon, and Codex. The score is the lower of the weekly percent and the 5-hour percent. When the 5-hour window resets within 30 minutes and the week is above 40%, the score uses the week alone. A pool at 0% is skipped. A tie goes to the pool whose week resets sooner. Cursor joins that rank only when its percent is measured. A 100% bar with no recorded use stays out, because the collector writes that same shape when Cursor sends no plan usage. Claude, Copilot, OpenCode, and OpenRouter stay out of the rank.
+
 ## Alfred
 
 `integrations/alfred/` is an Alfred 5 workflow opened with the `snd` keyword.

@@ -382,13 +382,13 @@ class QuotaManager {
 
     static func statusDot(remainingPct: Int) -> String {
         if remainingPct <= 15 { return "🔴" }
-        if remainingPct <= 40 { return "🟠" }
+        if remainingPct <= QuotaPoolSuggestion.warningAtOrBelow { return "🟠" }
         return "🟢"
     }
 
     static func statusColor(remainingPct: Int) -> NSColor {
         if remainingPct <= 15 { return NSColor.systemRed }
-        if remainingPct <= 40 { return NSColor.systemOrange }
+        if remainingPct <= QuotaPoolSuggestion.warningAtOrBelow { return NSColor.systemOrange }
         return NSColor.systemGreen
     }
 
@@ -960,6 +960,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: quotaHeaderAttr, height: 22, leftPadding: 14))
 
+        if let top = QuotaPoolSuggestion.rank(providers: providers, now: Date()).first {
+            let suggestionAttr = NSAttributedString(
+                string: QuotaPoolSuggestion.menuLine(for: top),
+                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+            )
+            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: suggestionAttr, height: 20, leftPadding: 14))
+        }
+
         let colHeaderStr = "      " + "QUOTA BUCKET".padding(toLength: 20, withPad: " ", startingAt: 0) + " " + "LEFT".padding(toLength: 4, withPad: " ", startingAt: 0) + "   " + "PROGRESS".padding(toLength: 12, withPad: " ", startingAt: 0) + "  " + "RESETS IN"
         let colHeaderAttr = NSAttributedString(
             string: colHeaderStr,
@@ -1516,8 +1524,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
 // MARK: - Main Entry Point
 
-let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
-app.setActivationPolicy(.accessory)
-app.run()
+@main
+struct AgentDashboardMain {
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.setActivationPolicy(.accessory)
+        app.run()
+    }
+}
