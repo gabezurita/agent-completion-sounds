@@ -789,7 +789,7 @@ def collect_copilot_usage() -> dict[str, Any]:
     """Show Copilot while chat or completions still has a quota."""
     seat = fetch_copilot_user() or {}
     buckets = copilot_quota_buckets(seat)
-    if not buckets:
+    if "chat" not in buckets and "completions" not in buckets:
         return {
             "status": "unavailable",
             "message": "Copilot seat has no chat or completions quota",

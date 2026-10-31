@@ -540,6 +540,20 @@ class TestAiQuotaCollector(unittest.TestCase):
             res = ai_quota_collector.collect_copilot_usage()
         self.assertNotEqual(res["status"], "ok")
 
+    def test_copilot_hides_premium_only_seat(self):
+        seat = _copilot_seat()
+        seat["quota_snapshots"]["chat"]["has_quota"] = False
+        seat["quota_snapshots"]["completions"]["has_quota"] = False
+        seat["quota_snapshots"]["premium_interactions"] = {
+            "has_quota": True,
+            "percent_remaining": 40,
+        }
+        with patch("os.path.exists", return_value=False), patch(
+            "subprocess.run", _security_and_gh({}, seat=seat)
+        ):
+            res = ai_quota_collector.collect_copilot_usage()
+        self.assertNotEqual(res["status"], "ok")
+
     def test_summary_uses_lowest_copilot_percent(self):
         line = ai_quota_collector.generate_summary_line(
             {
