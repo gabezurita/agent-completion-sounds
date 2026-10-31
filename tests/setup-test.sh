@@ -196,7 +196,10 @@ for _ in {1..20}; do
 done
 
 [[ -s "${PLAY_LOG}" ]]
-grep -q '/agent-completion-starter/.*\.wav$' "${PLAY_LOG}"
+if ! grep -F "${TEST_HOME}/sounds/" "${PLAY_LOG}" | grep -Eq '\.(wav|mp3|aif|aiff|m4a)$'; then
+  printf 'FAIL: expected a playable clip under %s, got:\n%s\n' "${TEST_HOME}/sounds" "$(cat "${PLAY_LOG}")" >&2
+  exit 1
+fi
 
 FRESH_HOME="${TEST_ROOT}/fresh-home"
 HOME="${FRESH_HOME}" PATH="${TEST_BIN}:${PATH}" PLAY_LOG="${PLAY_LOG}" \

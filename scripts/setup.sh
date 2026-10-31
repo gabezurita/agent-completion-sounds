@@ -17,6 +17,10 @@ command -v curl >/dev/null 2>&1 || {
   printf '%s\n' 'setup requires curl to download the CC0 voice sets' >&2
   exit 1
 }
+command -v ffmpeg >/dev/null 2>&1 || {
+  printf '%s\n' 'setup requires ffmpeg to convert the Kenney voice sets to wav' >&2
+  exit 1
+}
 if ! command -v afplay >/dev/null 2>&1 && \
   ! command -v paplay >/dev/null 2>&1 && \
   ! command -v aplay >/dev/null 2>&1; then

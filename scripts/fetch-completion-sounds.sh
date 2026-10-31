@@ -244,8 +244,20 @@ for i in "${!folders[@]}"; do
     continue
   fi
 
-  if [[ "$name" == *.ogg ]] && command -v ffmpeg >/dev/null 2>&1; then
-    ffmpeg -y -i "$tmp" "${dest_dir}/${wav_name}" -loglevel error
+  if [[ "$name" == *.ogg ]]; then
+    # afplay cannot play Vorbis OGG. Keep a wav instead of a silent clip.
+    if ! command -v ffmpeg >/dev/null 2>&1; then
+      echo "FAILED  ${folder}/${name} (install ffmpeg to convert ogg to wav)" >&2
+      rm -f "$tmp"
+      failed=$((failed + 1))
+      continue
+    fi
+    if ! ffmpeg -y -i "$tmp" "${dest_dir}/${wav_name}" -loglevel error; then
+      echo "FAILED  ${folder}/${name} (ogg conversion failed)" >&2
+      rm -f "$tmp"
+      failed=$((failed + 1))
+      continue
+    fi
     rm -f "$tmp"
     chmod 644 "${dest_dir}/${wav_name}"
     printf 'fetched and converted %s/%s -> %s\n' "$folder" "$name" "$wav_name"

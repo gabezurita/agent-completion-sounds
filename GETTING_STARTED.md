@@ -9,6 +9,7 @@ One command gives Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigra
 - Python 3
 - A supported audio player: `afplay` on macOS, or `paplay` and `aplay` on Linux
 - `curl`, so setup can download the CC0 voice sets
+- `ffmpeg`, so setup can convert the Kenney voice clips from OGG to WAV. `afplay` cannot play OGG
 
 ## Install
 
@@ -76,7 +77,7 @@ Theme names in the agent skill, including Blizzard folder names, are suggestions
 
 `soundfetch` reads `COMPLETION_SOUND_MANIFEST` when set, otherwise `scripts/completion-sound-sets.txt` when that file exists, otherwise the default manifest. The menu and the Alfred set list read the default file only. See [Agent Dashboard and Alfred](docs/menu-and-alfred.md).
 
-When `ffmpeg` is on `PATH`, `.ogg` downloads are converted to `.wav`.
+Kenney voice clips are downloaded as `.ogg`. `soundfetch` converts them to `.wav` and does not keep the `.ogg` file, because `afplay` cannot play it. Without `ffmpeg`, those clips fail to install.
 
 ```bash
 soundfetch --list

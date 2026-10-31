@@ -36,6 +36,9 @@ jobs:
         run: |
           python3 -c 'import pathlib, tomllib; files=list(pathlib.Path("hooks").glob("*.toml.snippet")); assert files; configs=[tomllib.loads(path.read_text()) for path in files]; assert all(config.get("notify") for config in configs)'
 
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Test adapters
         run: |
           for f in tests/*.sh; do
