@@ -331,10 +331,17 @@ class TestAiQuotaCollector(unittest.TestCase):
             res = ai_quota_collector.collect_copilot_usage()
             self.assertEqual(res["status"], "unavailable")
 
+    def test_collect_copilot_usage_vanished_db(self):
+        with patch("os.path.exists", return_value=True), patch(
+            "os.path.getsize", side_effect=FileNotFoundError
+        ):
+            res = ai_quota_collector.collect_copilot_usage()
+            self.assertEqual(res["status"], "unavailable")
+
     def test_collect_copilot_usage_ok(self):
         with patch("os.path.exists", return_value=True), patch(
-            "sqlite3.connect"
-        ) as mock_conn:
+            "os.path.getsize", return_value=128
+        ), patch("sqlite3.connect") as mock_conn:
             mock_cursor = MagicMock()
             mock_cursor.fetchone.side_effect = [
                 (5,),  # total_sessions

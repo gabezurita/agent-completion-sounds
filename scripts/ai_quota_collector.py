@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 import http.server
 import json
 import os
+import select
 import sqlite3
 import subprocess
 import threading
@@ -409,7 +410,11 @@ def query_codex_app_server_rate_limits() -> dict[str, Any] | None:
         proc.stdin.flush()
 
         result = None
-        for _ in range(15):
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            ready, _, _ = select.select([proc.stdout], [], [], 0.5)
+            if not ready:
+                continue
             line = proc.stdout.readline()
             if not line:
                 break
@@ -593,7 +598,11 @@ def collect_copilot_usage() -> dict[str, Any]:
             candidate_paths.append(path)
     conn = None
     for p in candidate_paths:
-        if os.path.exists(p) and os.path.getsize(p) > 0:
+        try:
+            usable = os.path.exists(p) and os.path.getsize(p) > 0
+        except OSError:
+            usable = False
+        if usable:
             try:
                 # Open with immutable=1 so WAL/read-only locks succeed across users/processes
                 conn = sqlite3.connect(f"file:{p}?immutable=1", uri=True, timeout=2.0)
@@ -765,7 +774,11 @@ def collect_opencode_usage() -> dict[str, Any]:
         os.path.join(real_home, ".agy-personal/.local/share/opencode/opencode.db"),
     ]
     for p in candidate_paths:
-        if os.path.exists(p) and os.path.getsize(p) > 0:
+        try:
+            usable = os.path.exists(p) and os.path.getsize(p) > 0
+        except OSError:
+            usable = False
+        if usable:
             try:
                 conn = sqlite3.connect(f"file:{p}?immutable=1", uri=True, timeout=2.0)
                 c = conn.cursor()
@@ -803,7 +816,10 @@ def collect_all_data() -> dict[str, Any]:
     threads = []
 
     def run_collector(name: str, fn: Any):
-        results[name] = fn()
+        try:
+            results[name] = fn()
+        except Exception as exc:
+            results[name] = {"status": "error", "error": str(exc)}
 
     for name, fn in [
         ("cursor", collect_cursor_usage),
@@ -819,7 +835,7 @@ def collect_all_data() -> dict[str, Any]:
         threads.append(t)
 
     for t in threads:
-        t.join(timeout=10)
+        t.join(timeout=20)
 
     now_utc = datetime.now(timezone.utc)
     return {
@@ -1159,7 +1175,6 @@ class DashboardRequestHandler(http.server.BaseHTTPRequestHandler):
             data = get_cached_or_fresh(force_refresh=force)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps(data).encode("utf-8"))
         else:
