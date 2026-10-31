@@ -62,6 +62,12 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 if [[ -f "${SCRIPT_DIR}/completion-sound-sets.default.txt" ]]; then
   cp -f "${SCRIPT_DIR}/completion-sound-sets.default.txt" "${APP_BUNDLE}/Contents/Resources/"
 fi
+if [[ ! -f "${SCRIPT_DIR}/ai_quota_collector.py" ]]; then
+  echo "Error: ${SCRIPT_DIR}/ai_quota_collector.py is missing." >&2
+  exit 1
+fi
+cp -f "${SCRIPT_DIR}/ai_quota_collector.py" "${APP_BUNDLE}/Contents/Resources/"
+
 for s in play-random-completion-sound.sh sound-mode.sh fetch-completion-sounds.sh; do
   if [[ -f "${SCRIPT_DIR}/${s}" ]]; then
     cp -f "${SCRIPT_DIR}/${s}" "${APP_BUNDLE}/Contents/Resources/"
