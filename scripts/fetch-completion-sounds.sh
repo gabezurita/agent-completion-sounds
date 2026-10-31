@@ -228,7 +228,7 @@ for i in "${!folders[@]}"; do
   mkdir -p "$dest_dir"
   tmp="$(mktemp "${TMPDIR:-/tmp}/completion-sound.XXXXXX")"
 
-  if ! curl -fsSL -H "User-Agent: ${UA}" --max-time 30 -o "$tmp" "$url"; then
+  if ! curl -fsSL --retry 4 --retry-all-errors --retry-delay 1 -H "User-Agent: ${UA}" --max-time 30 -o "$tmp" "$url"; then
     echo "FAILED  ${folder}/${name}" >&2
     rm -f "$tmp"
     failed=$((failed + 1))

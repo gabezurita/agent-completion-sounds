@@ -53,6 +53,18 @@ chmod +x "${TEST_BIN}/afplay"
 mkdir -p "${TEST_HOME}/sounds/agent-completion-starter"
 : > "${TEST_HOME}/sounds/agent-completion-starter/complete-bright.wav"
 
+seed_voice_wavs() {
+  local root="$1" folder name
+  while IFS='|' read -r folder name _ || [[ -n "${folder:-}" ]]; do
+    folder="${folder%%$'\r'*}"
+    [[ -z "${folder}" || "${folder}" == \#* ]] && continue
+    [[ "${folder}" == kenney-voice-* || "${folder}" == senfft-* ]] || continue
+    [[ -z "${name}" ]] && continue
+    mkdir -p "${root}/${folder}"
+    : > "${root}/${folder}/${name%.*}.wav"
+  done < "${REPO_ROOT}/scripts/completion-sound-sets.default.txt"
+}
+
 run_setup() {
   HOME="${TEST_HOME}" \
     PATH="${TEST_BIN}:${PATH}" \
@@ -62,6 +74,7 @@ run_setup() {
     "${REPO_ROOT}/scripts/setup.sh"
 }
 
+seed_voice_wavs "${TEST_HOME}/sounds"
 run_setup
 config_hashes() {
   shasum \
@@ -202,6 +215,7 @@ if ! grep -F "${TEST_HOME}/sounds/" "${PLAY_LOG}" | grep -Eq '\.(wav|mp3|aif|aif
 fi
 
 FRESH_HOME="${TEST_ROOT}/fresh-home"
+seed_voice_wavs "${FRESH_HOME}/sounds"
 HOME="${FRESH_HOME}" PATH="${TEST_BIN}:${PATH}" PLAY_LOG="${PLAY_LOG}" \
   AGENT_DASHBOARD_STUB_LOG="${DASH_LOG}" \
   "${REPO_ROOT}/scripts/setup.sh" >/dev/null
@@ -257,6 +271,7 @@ exec ${REAL_UNAME} "\$@"
 EOF
 chmod +x "${LINUX_BIN}/uname"
 : > "${LINUX_LOG}"
+seed_voice_wavs "${LINUX_HOME}/sounds"
 HOME="${LINUX_HOME}" \
   PATH="${LINUX_BIN}:${TEST_BIN}:${PATH}" \
   PLAY_LOG="${PLAY_LOG}" \
