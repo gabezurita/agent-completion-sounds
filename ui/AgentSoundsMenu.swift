@@ -1147,46 +1147,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // GitHub Copilot Section
         if let copilot = providers["copilot"] as? [String: Any], copilot["status"] as? String == "ok" {
+            let planStr = copilot["plan_type"] as? String ?? "GitHub"
+            let countdown = copilot["reset_countdown"] as? String
+            let cdStr = (countdown != nil && !countdown!.isEmpty) ? " · Resets in \(countdown!)" : ""
             let copilotHeaderAttr = NSAttributedString(
-                string: "GitHub Copilot (Local Telemetry)",
+                string: "GitHub Copilot (\(planStr))\(cdStr)",
                 attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
             )
             menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: copilotHeaderAttr, height: 20, leftPadding: 14))
 
-            let sessions = copilot["total_sessions"] as? Int ?? 0
-            let credits = copilot["total_ai_credits"] as? Double ?? 0.0
-            let tokens = copilot["total_tokens"] as? Int ?? 0
-
-            let numFormatter = NumberFormatter()
-            numFormatter.numberStyle = .decimal
-            let tokenStr = numFormatter.string(from: NSNumber(value: tokens)) ?? "\(tokens)"
-            let creditsStr = String(format: "%.2f", credits)
-
-            let sessAttr = NSAttributedString(
-                string: "    Lifetime Sessions: \(sessions) sessions",
-                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-            )
-            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: sessAttr, height: 18, leftPadding: 14))
-
-            let credAttr = NSAttributedString(
-                string: "    AI Credits Used: \(creditsStr) credits",
-                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-            )
-            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: credAttr, height: 18, leftPadding: 14))
-
-            let tokenAttr = NSAttributedString(
-                string: "    Tracked Tokens: \(tokenStr)",
-                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-            )
-            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: tokenAttr, height: 18, leftPadding: 14))
-
-            if let today = copilot["today"] as? [String: Any], let todayCredits = today["ai_credits_used"] as? Double, todayCredits > 0 {
-                let todayStr = String(format: "%.2f", todayCredits)
-                let todayAttr = NSAttributedString(
-                    string: "    Today's Credits: \(todayStr) credits",
-                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-                )
-                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: todayAttr, height: 18, leftPadding: 14))
+            if let buckets = copilot["buckets"] as? [String: Any] {
+                for bkey in ["chat", "completions", "premium_interactions"] {
+                    guard let b = buckets[bkey] as? [String: Any] else { continue }
+                    let rem = b["remaining_percent"] as? Int ?? 0
+                    let dot = QuotaManager.statusDot(remainingPct: rem)
+                    let rawLabel = b["label"] as? String ?? bkey
+                    let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
+                    let cd = b["reset_countdown"] as? String
+                    let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: rowAttr, height: 20, leftPadding: 14))
+                }
             }
 
             menu.addItem(NSMenuItem.separator())

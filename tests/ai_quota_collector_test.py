@@ -10,11 +10,63 @@ import tempfile
 import time
 import unittest
 from unittest.mock import MagicMock, mock_open, patch
+from urllib.error import URLError
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
 import ai_quota_collector
+
+
+def _completed(stdout="", code=0):
+    proc = MagicMock()
+    proc.returncode = code
+    proc.stdout = stdout
+    proc.stderr = ""
+    return proc
+
+
+def _json_response(payload):
+    class Body:
+        def read(self):
+            return json.dumps(payload).encode()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    return Body()
+
+
+def _security_and_gh(credentials, seat=None, gh_code=1):
+    def run(args, **kwargs):
+        cmd = list(args) if isinstance(args, (list, tuple)) else []
+        if cmd[:1] == ["security"]:
+            return _completed(json.dumps(credentials))
+        if cmd[:2] == ["gh", "api"] and "copilot_internal/user" in cmd:
+            if seat is None:
+                return _completed("", code=gh_code)
+            return _completed(json.dumps(seat))
+        return _completed("", code=1)
+
+    return run
+
+
+def _copilot_seat():
+    reset = (datetime.now(timezone.utc) + timedelta(hours=5)).strftime(
+        "%Y-%m-%dT%H:%M:%S.000Z"
+    )
+    return {
+        "copilot_plan": "individual",
+        "quota_reset_date_utc": reset,
+        "quota_snapshots": {
+            "chat": {"has_quota": True, "percent_remaining": 94.9},
+            "completions": {"has_quota": True, "percent_remaining": 99.2},
+            "premium_interactions": {"has_quota": False, "percent_remaining": 0},
+        },
+    }
 
 
 class TestAiQuotaCollector(unittest.TestCase):
@@ -326,22 +378,132 @@ class TestAiQuotaCollector(unittest.TestCase):
             res_json = json.loads(handler.wfile.getvalue().decode())
             self.assertEqual(res_json["test_status"], "ok")
 
+    def _write_claude_home(self, root, *, subscribed, fetched_at_ms, stats):
+        claude_dir = os.path.join(root, ".claude")
+        os.makedirs(claude_dir, exist_ok=True)
+        with open(os.path.join(root, ".claude.json"), "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "hasAvailableSubscription": subscribed,
+                    "oauthAccount": {
+                        "accountUuid": "acct-1",
+                        "profileFetchedAt": fetched_at_ms,
+                        "billingType": "stripe_subscription_contracted",
+                        "seatTier": "enterprise_usage_based",
+                    },
+                },
+                handle,
+            )
+        if stats:
+            with open(
+                os.path.join(claude_dir, "stats-cache.json"), "w", encoding="utf-8"
+            ) as handle:
+                json.dump(
+                    {"totalSessions": 4, "totalMessages": 9, "dailyActivity": []},
+                    handle,
+                )
+
+    def test_claude_zero_tier_hides_stats_despite_billing_strings(self):
+        profile = {
+            "hasAvailableSubscription": False,
+            "organization": {
+                "rate_limit_tier": "default_claude_zero",
+                "billing_type": "stripe_subscription_contracted",
+                "seat_tier": "enterprise_usage_based",
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(tmp, subscribed=True, fetched_at_ms=0, stats=True)
+            with patch.object(
+                ai_quota_collector, "get_real_home", return_value=tmp
+            ), patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-claude"}), patch(
+                "subprocess.run",
+                _security_and_gh({"claudeAiOauth": {"accessToken": "", "expiresAt": 0}}),
+            ), patch(
+                "urllib.request.urlopen", return_value=_json_response(profile)
+            ):
+                res = ai_quota_collector.collect_claude_usage()
+        self.assertNotEqual(res["status"], "ok")
+        self.assertNotIn("sk-test-claude", json.dumps(res))
+
+    def test_claude_active_profile_shows_without_stats_file(self):
+        profile = {"organization": {"rate_limit_tier": "default_claude_max"}}
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(tmp, subscribed=False, fetched_at_ms=0, stats=False)
+            with patch.object(
+                ai_quota_collector, "get_real_home", return_value=tmp
+            ), patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-claude"}), patch(
+                "subprocess.run",
+                _security_and_gh(
+                    {
+                        "claudeAiOauth": {
+                            "accessToken": "oauth-test-token",
+                            "expiresAt": int(time.time() * 1000) + 3_600_000,
+                        }
+                    }
+                ),
+            ), patch("urllib.request.urlopen", return_value=_json_response(profile)) as opened:
+                res = ai_quota_collector.collect_claude_usage()
+        self.assertEqual(res["status"], "ok")
+        request = opened.call_args.args[0]
+        self.assertIn("/api/oauth/profile", request.full_url)
+        self.assertNotIn("sk-test-claude", json.dumps(res))
+
+    def test_claude_fresh_cache_shows_when_refresh_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(
+                tmp,
+                subscribed=True,
+                fetched_at_ms=int(time.time() * 1000),
+                stats=False,
+            )
+            with patch.object(
+                ai_quota_collector, "get_real_home", return_value=tmp
+            ), patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-claude"}), patch(
+                "subprocess.run",
+                _security_and_gh({"claudeAiOauth": {"accessToken": "", "expiresAt": 0}}),
+            ), patch(
+                "urllib.request.urlopen", side_effect=URLError("offline")
+            ):
+                res = ai_quota_collector.collect_claude_usage()
+        self.assertEqual(res["status"], "ok")
+        self.assertNotIn("sk-test-claude", json.dumps(res))
+
+    def test_claude_stale_cache_hides_when_refresh_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(tmp, subscribed=True, fetched_at_ms=0, stats=True)
+            with patch.object(
+                ai_quota_collector, "get_real_home", return_value=tmp
+            ), patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-claude"}), patch(
+                "subprocess.run",
+                _security_and_gh({"claudeAiOauth": {"accessToken": "", "expiresAt": 0}}),
+            ), patch(
+                "urllib.request.urlopen", side_effect=URLError("offline")
+            ):
+                res = ai_quota_collector.collect_claude_usage()
+        self.assertNotEqual(res["status"], "ok")
+        self.assertNotIn("sk-test-claude", json.dumps(res))
+
     def test_collect_copilot_usage_missing_db(self):
-        with patch("os.path.exists", return_value=False):
+        with patch("os.path.exists", return_value=False), patch(
+            "subprocess.run", _security_and_gh({})
+        ):
             res = ai_quota_collector.collect_copilot_usage()
             self.assertEqual(res["status"], "unavailable")
 
     def test_collect_copilot_usage_vanished_db(self):
         with patch("os.path.exists", return_value=True), patch(
             "os.path.getsize", side_effect=FileNotFoundError
-        ):
+        ), patch("subprocess.run", _security_and_gh({})):
             res = ai_quota_collector.collect_copilot_usage()
             self.assertEqual(res["status"], "unavailable")
 
     def test_collect_copilot_usage_ok(self):
         with patch("os.path.exists", return_value=True), patch(
             "os.path.getsize", return_value=128
-        ), patch("sqlite3.connect") as mock_conn:
+        ), patch("sqlite3.connect") as mock_conn, patch(
+            "subprocess.run", _security_and_gh({}, seat=_copilot_seat())
+        ):
             mock_cursor = MagicMock()
             mock_cursor.fetchone.side_effect = [
                 (5,),  # total_sessions
@@ -352,12 +514,47 @@ class TestAiQuotaCollector(unittest.TestCase):
 
             res = ai_quota_collector.collect_copilot_usage()
             self.assertEqual(res["status"], "ok")
+            self.assertEqual(res["buckets"]["chat"]["remaining_percent"], 95)
+            self.assertEqual(res["buckets"]["completions"]["remaining_percent"], 99)
+            self.assertNotIn("premium_interactions", res["buckets"])
             self.assertEqual(res["total_sessions"], 5)
             self.assertEqual(res["total_events"], 12)
             self.assertEqual(res["total_tokens"], 105000)
             self.assertEqual(res["total_ai_credits"], 1.08)
             self.assertEqual(res["today"]["events_count"], 3)
             self.assertEqual(res["today"]["ai_credits_used"], 0.25)
+
+    def test_copilot_hides_local_db_without_seat_quota(self):
+        with patch("os.path.exists", return_value=True), patch(
+            "os.path.getsize", return_value=128
+        ), patch("sqlite3.connect") as mock_conn, patch(
+            "subprocess.run", _security_and_gh({})
+        ):
+            mock_cursor = MagicMock()
+            mock_cursor.fetchone.side_effect = [
+                (5,),
+                (12, 100000, 5000, 1080000000),
+                (3, 250000000),
+            ]
+            mock_conn.return_value.cursor.return_value = mock_cursor
+            res = ai_quota_collector.collect_copilot_usage()
+        self.assertNotEqual(res["status"], "ok")
+
+    def test_summary_uses_lowest_copilot_percent(self):
+        line = ai_quota_collector.generate_summary_line(
+            {
+                "providers": {
+                    "copilot": {
+                        "status": "ok",
+                        "buckets": {
+                            "chat": {"remaining_percent": 95},
+                            "completions": {"remaining_percent": 99},
+                        },
+                    }
+                }
+            }
+        )
+        self.assertIn("Cpl: 95%", line)
 
     def test_ensure_cli_path_prepends_existing_user_bins(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -398,9 +595,11 @@ class TestAiQuotaCollector(unittest.TestCase):
     def test_copilot_checks_tilde_and_real_home_session_store(self):
         with patch.dict(os.environ, {"HOME": "/tmp/nested/.agy-personal"}), patch.object(
             ai_quota_collector, "get_real_home", return_value="/tmp/nested"
-        ), patch("os.path.exists", return_value=False) as exists:
+        ), patch("os.path.exists", return_value=False) as exists, patch(
+            "subprocess.run", _security_and_gh({}, seat=_copilot_seat())
+        ):
             res = ai_quota_collector.collect_copilot_usage()
-        self.assertEqual(res["status"], "unavailable")
+        self.assertEqual(res["status"], "ok")
         checked = [call.args[0] for call in exists.call_args_list]
         self.assertIn(
             "/tmp/nested/.agy-personal/.copilot/session-store.db", checked
