@@ -27,6 +27,7 @@ import subprocess
 import threading
 import time
 from typing import Any
+import urllib.parse
 import urllib.request
 
 CACHE_FILE = "/tmp/ai_quota_collector_cache.json"
@@ -547,47 +548,272 @@ def collect_codex_usage() -> dict[str, Any]:
 # Provider: Claude Code
 # ─────────────────────────────────────────────────────────────
 
+CLAUDE_PROFILE_MAX_AGE_SECONDS = 24 * 60 * 60
+CLAUDE_ZERO_TIER = "default_claude_zero"
+CLAUDE_KEYCHAIN_SERVICE = "Claude Code-credentials"
+
+
+def _epoch_seconds(value: Any) -> float | None:
+    if not isinstance(value, (int, float)) or value <= 0:
+        return None
+    if value > 10_000_000_000:
+        return float(value) / 1000.0
+    return float(value)
+
+
+def load_claude_credentials() -> dict[str, Any]:
+    """Read the Claude OAuth blob from the keychain or credentials file.
+
+    The access token is returned only when it is non-empty and unexpired.
+    Callers must not include it in cached quota output.
+    """
+    raw = ""
+    try:
+        proc = subprocess.run(
+            ["security", "find-generic-password", "-s", CLAUDE_KEYCHAIN_SERVICE, "-w"],
+            capture_output=True,
+            text=True,
+            timeout=2.0,
+        )
+        if proc.returncode == 0:
+            raw = proc.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        raw = ""
+    if not raw:
+        path = os.path.join(get_real_home(), ".claude", ".credentials.json")
+        try:
+            with open(path, "r") as handle:
+                raw = handle.read()
+        except OSError:
+            raw = ""
+    token = ""
+    expires_at = 0
+    if raw:
+        try:
+            oauth = json.loads(raw).get("claudeAiOauth") or {}
+            token = oauth.get("accessToken") or ""
+            expires_at = oauth.get("expiresAt") or 0
+        except json.JSONDecodeError:
+            token = ""
+    expires = _epoch_seconds(expires_at)
+    if token and expires is not None and expires <= time.time():
+        token = ""
+    return {"accessToken": token}
+
+
+def read_claude_account_cache() -> dict[str, Any]:
+    path = os.path.join(get_real_home(), ".claude.json")
+    try:
+        with open(path, "r") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    account = data.get("oauthAccount") or {}
+    return {
+        "hasAvailableSubscription": bool(data.get("hasAvailableSubscription")),
+        "profileFetchedAt": account.get("profileFetchedAt"),
+        "accountUuid": account.get("accountUuid") or "",
+    }
+
+
+def claude_profile_is_active(profile: dict[str, Any]) -> bool:
+    """A refreshed profile is active only when the seat can still be used.
+
+    An explicit availability flag wins. Otherwise a rate-limit tier other
+    than the zero tier counts. Billing and seat-tier strings do not.
+    """
+    if "hasAvailableSubscription" in profile:
+        return bool(profile["hasAvailableSubscription"])
+    if "has_available_subscription" in profile:
+        return bool(profile["has_available_subscription"])
+    org = profile.get("organization") or {}
+    tier = org.get("rate_limit_tier") or org.get("user_rate_limit_tier") or ""
+    return bool(tier) and tier != CLAUDE_ZERO_TIER
+
+
+def fetch_claude_profile(token: str, api_key: str, account_uuid: str) -> dict[str, Any] | None:
+    """Refresh the Claude account profile. Failures return None."""
+    if token:
+        url = "https://api.anthropic.com/api/oauth/profile"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "agent-completion-sounds",
+            "Cache-Control": "no-cache",
+        }
+    elif api_key and account_uuid:
+        query = urllib.parse.urlencode({"account_uuid": account_uuid})
+        url = f"https://api.anthropic.com/api/claude_cli_profile?{query}"
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-beta": "oauth-2025-04-20",
+            "User-Agent": "agent-completion-sounds",
+            "Cache-Control": "no-cache",
+        }
+    else:
+        return None
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            body = resp.read().decode()
+        data = json.loads(body)
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    return data
+
+
+def claude_cached_subscription_active(cache: dict[str, Any]) -> bool:
+    fetched = _epoch_seconds(cache.get("profileFetchedAt"))
+    if fetched is None:
+        return False
+    if time.time() - fetched > CLAUDE_PROFILE_MAX_AGE_SECONDS:
+        return False
+    return bool(cache.get("hasAvailableSubscription"))
+
+
+def claude_subscription_active() -> bool:
+    creds = load_claude_credentials()
+    cache = read_claude_account_cache()
+    api_key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+    profile = fetch_claude_profile(
+        creds.get("accessToken") or "",
+        api_key,
+        cache.get("accountUuid") or "",
+    )
+    if profile is not None:
+        return claude_profile_is_active(profile)
+    return claude_cached_subscription_active(cache)
+
+
 def collect_claude_usage() -> dict[str, Any]:
-    """Collects Claude Code telemetry from local stats-cache and activity logs."""
-    real_home = get_real_home()
-    stats_file = os.path.join(real_home, ".claude/stats-cache.json")
-    if not os.path.exists(stats_file):
+    """Collect Claude Code telemetry only while a refreshed seat is active."""
+    if not claude_subscription_active():
         return {
             "status": "unavailable",
-            "error": "Claude stats-cache.json not found",
+            "error": "Claude subscription is not active",
         }
 
+    real_home = get_real_home()
+    stats_file = os.path.join(real_home, ".claude/stats-cache.json")
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    total_sessions = 0
+    total_messages = 0
+    today_messages = 0
+    today_tool_calls = 0
+    if os.path.exists(stats_file):
+        try:
+            with open(stats_file, "r") as handle:
+                stats = json.load(handle)
+            total_sessions = stats.get("totalSessions", 0)
+            total_messages = stats.get("totalMessages", 0)
+            for entry in stats.get("dailyActivity", []):
+                if entry.get("date") == today_iso:
+                    today_messages = entry.get("messageCount", 0)
+                    today_tool_calls = entry.get("toolCallCount", 0)
+                    break
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+    return {
+        "status": "ok",
+        "plan": "Claude Code",
+        "total_sessions": total_sessions,
+        "total_messages": total_messages,
+        "today": {
+            "date": today_iso,
+            "message_count": today_messages,
+            "tool_call_count": today_tool_calls,
+        },
+    }
+
+
+# ─────────────────────────────────────────────────────────────
+# Provider: GitHub Copilot
+# ─────────────────────────────────────────────────────────────
+
+COPILOT_BUCKET_LABELS = (
+    ("chat", "Copilot Chat"),
+    ("completions", "Copilot Completions"),
+    ("premium_interactions", "Copilot Premium"),
+)
+
+
+def fetch_copilot_user() -> dict[str, Any] | None:
+    """Read the Copilot seat. The public /user/copilot route 404s."""
+    ensure_cli_path()
     try:
-        with open(stats_file, "r") as f:
-            stats = json.load(f)
+        proc = subprocess.run(
+            ["gh", "api", "copilot_internal/user"],
+            capture_output=True,
+            text=True,
+            timeout=8,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return None
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    return data
 
-        daily_activity = stats.get("dailyActivity", [])
-        today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-        today_messages = 0
-        today_tool_calls = 0
-        for entry in daily_activity:
-            if entry.get("date") == today_iso:
-                today_messages = entry.get("messageCount", 0)
-                today_tool_calls = entry.get("toolCallCount", 0)
-                break
-
-        return {
-            "status": "ok",
-            "plan": "Claude Code",
-            "total_sessions": stats.get("totalSessions", 0),
-            "total_messages": stats.get("totalMessages", 0),
-            "today": {
-                "date": today_iso,
-                "message_count": today_messages,
-                "tool_call_count": today_tool_calls,
-            },
+def copilot_quota_buckets(seat: dict[str, Any]) -> dict[str, Any]:
+    snapshots = seat.get("quota_snapshots") or {}
+    reset_at = seat.get("quota_reset_date_utc") or seat.get("quota_reset_date")
+    countdown = format_countdown(reset_at) if isinstance(reset_at, str) else ""
+    buckets: dict[str, Any] = {}
+    for key, label in COPILOT_BUCKET_LABELS:
+        snap = snapshots.get(key)
+        if not isinstance(snap, dict) or not snap.get("has_quota"):
+            continue
+        try:
+            remaining = int(round(float(snap.get("percent_remaining") or 0)))
+        except (TypeError, ValueError):
+            remaining = 0
+        remaining = max(0, min(100, remaining))
+        buckets[key] = {
+            "label": label,
+            "remaining_percent": remaining,
+            "used_percent": 100 - remaining,
+            "reset_countdown": countdown,
         }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    return buckets
 
 
 def collect_copilot_usage() -> dict[str, Any]:
+    """Show Copilot while chat or completions still has a quota."""
+    seat = fetch_copilot_user() or {}
+    buckets = copilot_quota_buckets(seat)
+    if "chat" not in buckets and "completions" not in buckets:
+        return {
+            "status": "unavailable",
+            "message": "Copilot seat has no chat or completions quota",
+        }
+
+    telemetry = _collect_copilot_telemetry()
+    countdown = ""
+    for bucket in buckets.values():
+        countdown = bucket.get("reset_countdown") or ""
+        if countdown:
+            break
+    result: dict[str, Any] = {
+        "status": "ok",
+        "name": "copilot",
+        "plan": "GitHub Copilot",
+        "plan_type": seat.get("copilot_plan") or "individual",
+        "reset_countdown": countdown,
+        "buckets": buckets,
+    }
+    result.update(telemetry)
+    return result
+
+
+def _collect_copilot_telemetry() -> dict[str, Any]:
     """Collects local Copilot telemetry from session-store.db."""
     candidate_paths: list[str] = []
     for path in (
@@ -615,7 +841,7 @@ def collect_copilot_usage() -> dict[str, Any]:
                 conn = None
 
     if not conn:
-        return {"status": "unavailable", "message": "Copilot session store not found or uninitialized"}
+        return {}
 
     try:
         cursor = conn.cursor()
@@ -660,9 +886,6 @@ def collect_copilot_usage() -> dict[str, Any]:
         conn.close()
 
         return {
-            "status": "ok",
-            "name": "copilot",
-            "plan": "GitHub Copilot (Local Telemetry)",
             "total_sessions": total_sessions,
             "total_events": total_events,
             "total_tokens": total_tokens,
@@ -672,10 +895,10 @@ def collect_copilot_usage() -> dict[str, Any]:
                 "ai_credits_used": today_credits,
             },
         }
-    except Exception as e:
+    except Exception:
         if conn:
             conn.close()
-        return {"status": "error", "error": str(e)}
+        return {}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -924,8 +1147,15 @@ def generate_summary_line(data: dict[str, Any]) -> str:
     # Copilot
     cpl = providers.get("copilot", {})
     if cpl.get("status") == "ok":
-        tot_cpl = cpl.get("total_ai_credits", 0)
-        parts.append(f"Cpl: {tot_cpl}cred")
+        percents = [
+            bucket.get("remaining_percent")
+            for bucket in (cpl.get("buckets") or {}).values()
+            if isinstance(bucket, dict) and bucket.get("remaining_percent") is not None
+        ]
+        if percents:
+            parts.append(f"Cpl: {min(percents)}%")
+        else:
+            parts.append(f"Cpl: {cpl.get('total_ai_credits', 0)}cred")
 
     # OpenRouter
     openrouter = providers.get("openrouter", {})
@@ -1122,8 +1352,30 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         `;
       }
 
+      // Copilot Card
+      if (p.copilot && p.copilot.status === 'ok') {
+        const cpl = p.copilot;
+        const b = cpl.buckets || {};
+        html += `
+          <div class="bg-darkcard border border-darkborder rounded-2xl p-6 shadow-xl space-y-5">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs uppercase tracking-wider text-violet-400 font-bold">GitHub</span>
+                <h2 class="text-xl font-bold mt-0.5 text-slate-100">GitHub Copilot</h2>
+              </div>
+              <span class="text-xs px-2.5 py-1 bg-violet-950/60 border border-violet-800/60 text-violet-300 rounded-md font-mono">${cpl.plan_type || 'Active'}</span>
+            </div>
+            <div class="space-y-4">
+              ${b.chat ? renderProgressBar(b.chat.label, b.chat.remaining_percent, b.chat.used_percent, 'Resets in ' + (b.chat.reset_countdown || ''), 'indigo') : ''}
+              ${b.completions ? renderProgressBar(b.completions.label, b.completions.remaining_percent, b.completions.used_percent, 'Resets in ' + (b.completions.reset_countdown || ''), 'emerald') : ''}
+              ${b.premium_interactions ? renderProgressBar(b.premium_interactions.label, b.premium_interactions.remaining_percent, b.premium_interactions.used_percent, 'Resets in ' + (b.premium_interactions.reset_countdown || ''), 'purple') : ''}
+            </div>
+          </div>
+        `;
+      }
+
       // Claude Card
-      if (p.claude) {
+      if (p.claude && p.claude.status === 'ok') {
         const cld = p.claude;
         html += `
           <div class="bg-darkcard border border-darkborder rounded-2xl p-6 shadow-xl space-y-5">
@@ -1268,12 +1520,10 @@ def main():
                 print(f"  • Total Sessions: {p.get('total_sessions')}")
                 if "today" in p:
                     print(f"  • Today's Messages: {p['today'].get('message_count')}")
-            elif name == "copilot":
-                print(f"  • Total Sessions: {p.get('total_sessions')}")
-                print(f"  • AI Credits Used: {p.get('total_ai_credits')} credits")
-                print(f"  • Tracked Tokens: {p.get('total_tokens')}")
-                if "today" in p:
-                    print(f"  • Today's Credits: {p['today'].get('ai_credits_used')}")
+            elif name == "copilot" and "buckets" in p:
+                for bk, b in p["buckets"].items():
+                    cd = f" (resets in {b['reset_countdown']})" if b.get("reset_countdown") else ""
+                    print(f"  • {b['label']}: {b['remaining_percent']}% remaining{cd}")
 
 
 if __name__ == "__main__":
