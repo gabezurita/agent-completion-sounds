@@ -116,14 +116,19 @@ if [[ "${query}" == fetch* ]]; then
   items=()
   manifest="${REPO_ROOT}/scripts/completion-sound-sets.default.txt"
   if [[ -f "${manifest}" ]]; then
+    seen=" "
     while IFS= read -r line || [[ -n "${line}" ]]; do
       line="${line%$'\r'}"
       [[ "$line" =~ ^# ]] && continue
       [[ -z "$line" ]] && continue
       set_name=$(printf '%s' "${line}" | cut -d'|' -f1)
+      [[ -z "${set_name}" ]] && continue
+      case "${seen}" in
+        *" ${set_name} "*) continue ;;
+      esac
+      seen="${seen}${set_name} "
       set_desc=$(printf '%s' "${line}" | cut -d'|' -f4)
       items+=( "{\"uid\":\"fetch-${set_name}\",\"title\":\"Download '${set_name}'\",\"subtitle\":\"${set_desc}\",\"arg\":\"fetch ${set_name}\"}" )
-      break # default manifest only has kenney-ui
     done < "${manifest}"
   fi
   items+=( "{\"uid\":\"fetch-all\",\"title\":\"Download All Curated Sound Sets\",\"subtitle\":\"Downloads every sound pack in the manifest\",\"arg\":\"fetch all\"}" )

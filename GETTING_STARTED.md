@@ -1,6 +1,6 @@
 # Getting started
 
-One command gives Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigravity one shared completion-sound pool. It writes the starter sounds on this machine. It does not download audio or require a sound-library account.
+One command gives Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigravity one shared completion-sound pool. It writes the starter sounds on this machine and downloads the CC0 voice sets from the default catalog. It does not require a sound-library account.
 
 ## Requirements
 
@@ -8,6 +8,7 @@ One command gives Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigra
 - Bash 3.2 or newer
 - Python 3
 - A supported audio player: `afplay` on macOS, or `paplay` and `aplay` on Linux
+- `curl`, so setup can download the CC0 voice sets
 
 ## Install
 
@@ -31,6 +32,7 @@ On macOS, setup then runs `scripts/setup-dashboard.sh`. That builds `AgentDashbo
    Setup writes that user Antigravity file only. A workspace `.agents/hooks.json` is a manual merge.
 4. Sets Codex CLI's user-level `notify` command to `~/.local/bin/codex-notify.sh`.
 5. Appends `agent-completion-starter` to an existing `~/sounds/favorites.txt` and plays a test sound. If that file does not exist, setup leaves it absent. With no favorites file, `session` mode searches every pack except `scratch` and folders whose names start with a dot.
+6. Downloads `kenney-voice-female`, `kenney-voice-male`, `senfft-teuton`, and `senfft-germanic` from the default manifest. When `favorites.txt` exists, setup appends those folder names once.
 
 Existing JSON settings and unrelated hooks stay intact. Before changing an existing configuration file, setup writes a sibling `.bak` copy. Running setup again is safe and does not duplicate hooks or favorites.
 
@@ -62,7 +64,13 @@ Other general-purpose sources include [Pixabay Sound Effects](https://pixabay.co
 
 ### Curated sets (`soundfetch`)
 
-The shipped manifest, `scripts/completion-sound-sets.default.txt`, contains one set: `kenney-ui` (five Kenney CC0 clicks). Theme names in the agent skill are suggestions, not downloadable sets, and setup does not install them.
+The shipped manifest, `scripts/completion-sound-sets.default.txt`, contains five sets:
+
+- `kenney-ui`: five Kenney CC0 clicks
+- `kenney-voice-female` and `kenney-voice-male`: positive lines from Kenney's CC0 Voiceover Pack. Failure lines such as "you lose" and "mission failed" are left out
+- `senfft-teuton` and `senfft-germanic`: Manuel Senfft's CC0 Wyrmsun unit responses (selected, acknowledge, ready, work complete, annoyed)
+
+Theme names in the agent skill, including Blizzard folder names, are suggestions. They are not downloadable sets, and setup does not install them. Setup does install the five sets above.
 
 `soundfetch` reads `COMPLETION_SOUND_MANIFEST` when set, otherwise `scripts/completion-sound-sets.txt` when that file exists, otherwise the default manifest. The menu and the Alfred set list read the default file only. See [Agent Dashboard and Alfred](docs/menu-and-alfred.md).
 
@@ -111,7 +119,7 @@ Remove the top-level `notify` entry from `~/.codex/config.toml` when it points a
 
 Remove the `~/.local/bin` links setup created: `play-random-completion-sound`, `play-random-completion-sound.sh`, `soundmode`, `sound-mode.sh`, `codex-notify.sh`, `soundfetch`, and `fetch-completion-sounds.sh`.
 
-You can remove `~/sounds/agent-completion-starter` and its line in `~/sounds/favorites.txt`.
+You can remove `~/sounds/agent-completion-starter`, `kenney-voice-female`, `kenney-voice-male`, `senfft-teuton`, and `senfft-germanic`, and their lines in `~/sounds/favorites.txt`.
 
 Quit Agent Dashboard. On macOS, stop the quota page setup started on `127.0.0.1:3333`. If you installed login launch, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.plist` and the `~/.local/bin/agent-sounds-menu` symlink. If you installed the main-branch refresh, remove `~/Library/LaunchAgents/com.gabo.agent-sounds-menu.refresh.plist` and `~/.local/share/agent-completion-sounds`. Remove the workflow from Alfred.
 

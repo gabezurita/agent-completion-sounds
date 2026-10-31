@@ -1,6 +1,61 @@
-# Default royalty-free sounds from Kenney UI Audio (CC0 1.0)
-kenney-ui|click1.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click1.wav|Kenney UI Click 1
+# Default CC0 catalog. Audio is downloaded into the sounds root and is not committed.
+# Kenney voice lines are the positive cues from Kenney's Voiceover Pack (CC0 1.0).
+# Files are pinned to ETdoFresh/kenney.nl @ 45df48c4, a redistribution of kenney.nl.
+# Failure lines and combat calls other than "go go go" are omitted.
+# Senfft lines are Manuel Senfft's Wyrmsun unit responses (CC0), listed in that
+# repo's sounds/credits.txt and pinned to Andrettin/Wyrmsun @ f0330d2a.
+# Resource alerts and attack lines are omitted.
+kenney-ui|click1.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click1.wav|Five Kenney CC0 interface clicks
 kenney-ui|click2.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click2.wav|Kenney UI Click 2
 kenney-ui|click3.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click3.wav|Kenney UI Click 3
 kenney-ui|click4.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click4.wav|Kenney UI Click 4
 kenney-ui|click5.wav|https://raw.githubusercontent.com/Calinou/kenney-ui-audio/master/addons/kenney_ui_audio/click5.wav|Kenney UI Click 5
+kenney-voice-female|ready.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/ready.ogg|Kenney CC0 female announcer, positive lines only
+kenney-voice-female|set.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/set.ogg|Kenney female: Set
+kenney-voice-female|go.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/go.ogg|Kenney female: Go
+kenney-voice-female|correct.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/correct.ogg|Kenney female: Correct
+kenney-voice-female|congratulations.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/congratulations.ogg|Kenney female: Congratulations
+kenney-voice-female|objective_achieved.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/objective_achieved.ogg|Kenney female: Objective achieved
+kenney-voice-female|mission_completed.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/mission_completed.ogg|Kenney female: Mission completed
+kenney-voice-female|you_win.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/you_win.ogg|Kenney female: You win
+kenney-voice-female|level_up.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/level_up.ogg|Kenney female: Level up
+kenney-voice-female|new_highscore.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/new_highscore.ogg|Kenney female: New highscore
+kenney-voice-female|power_up.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/power_up.ogg|Kenney female: Power up
+kenney-voice-female|war_go_go_go.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Female/war_go_go_go.ogg|Kenney female: Go go go
+kenney-voice-male|ready.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/ready.ogg|Kenney CC0 male announcer, positive lines only
+kenney-voice-male|set.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/set.ogg|Kenney male: Set
+kenney-voice-male|go.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/go.ogg|Kenney male: Go
+kenney-voice-male|correct.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/correct.ogg|Kenney male: Correct
+kenney-voice-male|congratulations.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/congratulations.ogg|Kenney male: Congratulations
+kenney-voice-male|objective_achieved.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/objective_achieved.ogg|Kenney male: Objective achieved
+kenney-voice-male|mission_completed.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/mission_completed.ogg|Kenney male: Mission completed
+kenney-voice-male|you_win.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/you_win.ogg|Kenney male: You win
+kenney-voice-male|level_up.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/level_up.ogg|Kenney male: Level up
+kenney-voice-male|new_highscore.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/new_highscore.ogg|Kenney male: New highscore
+kenney-voice-male|power_up.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/power_up.ogg|Kenney male: Power up
+kenney-voice-male|war_go_go_go.ogg|https://raw.githubusercontent.com/ETdoFresh/kenney.nl/45df48c4d45f8716216b1a9e22df0b69cd9f5932/kenney_voiceoverpack/Male/war_go_go_go.ogg|Kenney male: Go go go
+senfft-teuton|acknowledge_01.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/acknowledge_01.wav|Senfft CC0 Teuton unit responses
+senfft-teuton|acknowledge_02.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/acknowledge_02.wav|Teuton acknowledge 2
+senfft-teuton|acknowledge_03.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/acknowledge_03.wav|Teuton acknowledge 3
+senfft-teuton|acknowledge_04.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/acknowledge_04.wav|Teuton acknowledge 4
+senfft-teuton|selected_01.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/selected_01.wav|Teuton selected 1
+senfft-teuton|selected_02.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/selected_02.wav|Teuton selected 2
+senfft-teuton|selected_03.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/selected_03.wav|Teuton selected 3
+senfft-teuton|selected_04.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/selected_04.wav|Teuton selected 4
+senfft-teuton|ready.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/ready.wav|Teuton ready
+senfft-teuton|annoyed_01.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/annoyed_01.wav|Teuton annoyed 1
+senfft-teuton|annoyed_02.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/annoyed_02.wav|Teuton annoyed 2
+senfft-teuton|annoyed_03.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/basic_voices/annoyed_03.wav|Teuton annoyed 3
+senfft-teuton|bauer_ready.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/bauer/bauer_ready.wav|Teuton worker ready
+senfft-teuton|work_complete.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/bauer/work_complete.wav|Teuton work complete
+senfft-teuton|work_complete_extra_1.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/teuton/bauer/work_complete_extra_1.wav|Teuton work complete 2
+senfft-germanic|acknowledge_01.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/acknowledge_01.wav|Senfft CC0 Germanic unit responses
+senfft-germanic|acknowledge_02.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/acknowledge_02.wav|Germanic acknowledge 2
+senfft-germanic|acknowledge_03.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/acknowledge_03.wav|Germanic acknowledge 3
+senfft-germanic|acknowledge_04.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/acknowledge_04.wav|Germanic acknowledge 4
+senfft-germanic|selected_01.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/selected_01.wav|Germanic selected 1
+senfft-germanic|selected_02.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/selected_02.wav|Germanic selected 2
+senfft-germanic|ready.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/ready.wav|Germanic ready
+senfft-germanic|annoyed_01.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/annoyed_01.wav|Germanic annoyed 1
+senfft-germanic|annoyed_02.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/basic_voices/annoyed_02.wav|Germanic annoyed 2
+senfft-germanic|work_complete.wav|https://raw.githubusercontent.com/Andrettin/Wyrmsun/f0330d2a747f6746ea8c067e65cf6c944a4653f3/sounds/germanic/bura/work_complete.wav|Germanic work complete

@@ -56,7 +56,7 @@ Keep the workflow files at `integrations/alfred/` inside the clone when you need
 
 Type `snd` and pick a row. The typed prefixes are `snd fav`, `snd mode`, and `snd fetch`. The bare `snd` list includes mute, a test sound, mode, favorites, Finder, and download. `snd mode` offers `session`, `session-all`, `favorites`, and `all`.
 
-The fetch list reads `scripts/completion-sound-sets.default.txt` and stops after the first set name. Download All runs `soundfetch` with no arguments, so it downloads every set in the manifest that command resolves: `COMPLETION_SOUND_MANIFEST`, else `scripts/completion-sound-sets.txt` when that file exists, else the default manifest.
+The fetch list reads `scripts/completion-sound-sets.default.txt` and shows each set once. Download All runs `soundfetch` with no arguments, so it downloads every set in the manifest that command resolves: `COMPLETION_SOUND_MANIFEST`, else `scripts/completion-sound-sets.txt` when that file exists, else the default manifest.
 
 The Alfred test row sets only `AGENT_COMPLETION_SOUND_DISABLE=0` and plays a stop for conversation id `alfred-test`. The `.disabled` sentinel and the cooldown still apply. The play can stick `alfred-test`.
 

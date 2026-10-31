@@ -71,6 +71,8 @@ Exclude these active units when making a new suggestion.
 
 ### Thematic Mapping
 
+Shipped CC0 packs are `kenney-voice-female`, `kenney-voice-male`, `senfft-teuton`, and `senfft-germanic`. The folders below are local theme names. They are not in the shipped manifest.
+
 Use the following map to suggest a unit that fits the "vibe" or type of task you are performing:
 
 | Sound Unit Folder | Category | Theme / Vibe | Suggested Tasks | Catchphrase / Dialogue Line |

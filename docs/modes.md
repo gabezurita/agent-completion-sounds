@@ -45,4 +45,4 @@ In `session` and `session-all`, a conversation id sticks one pack for later play
 
 A new sticky pick skips packs bound to other conversations inside `AGENT_SOUND_ACTIVE_WINDOW_SECS`. Each play refreshes that conversation's timestamp. If every favorite is already in use, the pick expands to the full pool. If every pack is in use, it picks the one whose other conversation was active least recently.
 
-The agent skill `agent-completion-sounds` can suggest a theme name such as `sc1-medic`. Those names are not in the shipped `soundfetch` manifest, and setup does not install them.
+The agent skill `agent-completion-sounds` can suggest a theme name such as `sc1-medic`. Those names are not in the shipped `soundfetch` manifest, and setup does not install them. Setup does install `kenney-voice-female`, `kenney-voice-male`, `senfft-teuton`, and `senfft-germanic`.
