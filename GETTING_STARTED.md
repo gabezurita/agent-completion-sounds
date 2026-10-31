@@ -58,6 +58,8 @@ Restart agent sessions that were already open. Each agent loads its own hook con
 
 Copy supported `.mp3`, `.wav`, `.aiff`, `.aif`, `.m4a`, or `.ogg` files anywhere under `~/sounds`. This repository does not include third-party audio. Find reusable notification sounds on [Freesound](https://freesound.org/), preferably under CC0, or use sounds you created or have permission to use. Check each file's license and give attribution when the license requires it. Do not redistribute copyrighted game audio.
 
+The app plays whatever is in a folder under `~/sounds`. Setup only downloads the CC0 sets in the manifest. If you already have unit voices you are allowed to use, such as StarCraft, Warcraft, Dune, or Red Alert recordings, copy them into a folder there and add that folder name to `favorites.txt`.
+
 Freesound files carry individual licenses. Its [license guide](https://freesound.org/help/faq/#licenses) explains CC0, CC BY, and CC BY-NC. CC BY requires attribution. CC BY-NC limits commercial use. A file being downloadable does not by itself make it safe to reuse.
 
 Other general-purpose sources include [Pixabay Sound Effects](https://pixabay.com/sound-effects/) under the [Pixabay Content License](https://pixabay.com/service/license-summary/) and [Mixkit Sound Effects](https://mixkit.co/free-sound-effects/). Read the license on the Mixkit page before reuse.
