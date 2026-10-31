@@ -13,6 +13,14 @@ command -v python3 >/dev/null 2>&1 || {
   printf '%s\n' 'setup requires python3' >&2
   exit 1
 }
+command -v curl >/dev/null 2>&1 || {
+  printf '%s\n' 'setup requires curl to download the CC0 voice sets' >&2
+  exit 1
+}
+command -v ffmpeg >/dev/null 2>&1 || {
+  printf '%s\n' 'setup requires ffmpeg to convert the Kenney voice sets to wav' >&2
+  exit 1
+}
 if ! command -v afplay >/dev/null 2>&1 && \
   ! command -v paplay >/dev/null 2>&1 && \
   ! command -v aplay >/dev/null 2>&1; then
@@ -306,9 +314,46 @@ if favorites_path.exists():
     atomic_write(favorites_path, "\n".join(favorites) + "\n")
 PY
 
+VOICE_SETS=(
+  kenney-voice-female
+  kenney-voice-male
+  senfft-teuton
+  senfft-germanic
+)
+COMPLETION_SOUND_MANIFEST="${SCRIPT_DIR}/completion-sound-sets.default.txt" \
+  "${SCRIPT_DIR}/fetch-completion-sounds.sh" "${VOICE_SETS[@]}"
+
+python3 - "${SOUNDS_ROOT}" "${VOICE_SETS[@]}" <<'PY'
+import sys
+from pathlib import Path
+
+sounds_root = Path(sys.argv[1])
+names = sys.argv[2:]
+favorites_path = sounds_root / "favorites.txt"
+if not favorites_path.exists():
+    sys.exit(0)
+audio = {".wav", ".mp3", ".aif", ".aiff", ".m4a", ".ogg"}
+favorites = favorites_path.read_text().splitlines()
+changed = False
+for name in names:
+    folder = sounds_root / name
+    if name in favorites or not folder.is_dir():
+        continue
+    if not any(path.suffix.lower() in audio for path in folder.iterdir() if path.is_file()):
+        continue
+    favorites.append(name)
+    changed = True
+if changed:
+    text = "\n".join(favorites)
+    if text and not text.endswith("\n"):
+        text += "\n"
+    favorites_path.write_text(text)
+PY
+
 printf '%s\n' '{}' | "${PLAYER}" >/dev/null
 
 printf 'Installed three CC0 starter sounds in %s\n' "${SOUNDS_ROOT}/agent-completion-starter"
+printf 'Installed CC0 voice sets: %s\n' "${VOICE_SETS[*]}"
 printf '%s\n' 'Configured Cursor, Claude Code, Gemini CLI, Codex CLI, and Google Antigravity.'
 printf '%s\n' 'Played a completion sound. Restart open agent sessions to load the new hooks.'
 

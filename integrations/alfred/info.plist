@@ -147,9 +147,9 @@ Type snd and pick a row. Bare snd lists mute, a test sound, playback mode, favor
 Prefixes:
 - snd fav, then a pack name: add or remove that pack in favorites
 - snd mode: session, session-all, favorites, or all
-- snd fetch: the first set in scripts/completion-sound-sets.default.txt, or Download All
+- snd fetch: each set in scripts/completion-sound-sets.default.txt, or Download All
 
-Download All runs soundfetch with no arguments. That command reads COMPLETION_SOUND_MANIFEST, else scripts/completion-sound-sets.txt when that file exists, else the default manifest. The fetch list itself reads only the default manifest and stops after the first set name.</string>
+Download All runs soundfetch with no arguments. That command reads COMPLETION_SOUND_MANIFEST, else scripts/completion-sound-sets.txt when that file exists, else the default manifest. The fetch list itself reads only the default manifest and shows each set once.</string>
 	<key>uidata</key>
 	<dict>
 		<key>B1000000-0000-0000-0000-000000000001</key>

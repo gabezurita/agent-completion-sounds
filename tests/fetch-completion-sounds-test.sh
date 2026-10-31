@@ -14,12 +14,28 @@ if ! printf '%s\n' "$output" | grep -q "kenney-ui"; then
   printf 'FAIL: Default manifest list output: %s\n' "$output" >&2
   exit 1
 fi
+for set_name in kenney-voice-female kenney-voice-male senfft-teuton senfft-germanic; do
+  if ! printf '%s\n' "$output" | grep -q "${set_name}"; then
+    printf 'FAIL: Default manifest missing %s: %s\n' "${set_name}" "$output" >&2
+    exit 1
+  fi
+done
 
 # Test 2: Dry-run with specific set listing
 printf 'Testing default manifest list with specific set...\n'
 output=$(COMPLETION_SOUND_MANIFEST="${REPO_ROOT}/scripts/completion-sound-sets.default.txt" "${REPO_ROOT}/scripts/fetch-completion-sounds.sh" --list kenney-ui)
 if ! printf '%s\n' "$output" | grep -q "click1.wav"; then
   printf 'FAIL: Default manifest specific list output: %s\n' "$output" >&2
+  exit 1
+fi
+
+voice_list=$(COMPLETION_SOUND_MANIFEST="${REPO_ROOT}/scripts/completion-sound-sets.default.txt" "${REPO_ROOT}/scripts/fetch-completion-sounds.sh" --list kenney-voice-female senfft-teuton senfft-germanic)
+if printf '%s\n' "$voice_list" | grep -Eq 'you_lose|mission_failed|not_enough|attack_'; then
+  printf 'FAIL: Default voice sets include an omitted line\n%s\n' "$voice_list" >&2
+  exit 1
+fi
+if ! printf '%s\n' "$voice_list" | grep -q "acknowledge_01.wav"; then
+  printf 'FAIL: Senfft acknowledge clip missing from list\n' >&2
   exit 1
 fi
 
