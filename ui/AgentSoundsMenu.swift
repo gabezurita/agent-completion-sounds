@@ -259,8 +259,17 @@ class QuotaManager {
     private var lastFetchTime: Date?
 
     var collectorScriptPath: String {
-        return FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".agents/scripts/ai_quota_collector.py").path
+        if let resourceURL = Bundle.main.resourceURL {
+            let bundled = resourceURL.appendingPathComponent("ai_quota_collector.py").path
+            if FileManager.default.fileExists(atPath: bundled) {
+                return bundled
+            }
+        }
+        return URL(fileURLWithPath: CommandLine.arguments[0])
+            .deletingLastPathComponent()
+            .appendingPathComponent("../Resources/ai_quota_collector.py")
+            .standardizedFileURL
+            .path
     }
 
     func loadCachedData() -> [String: Any]? {

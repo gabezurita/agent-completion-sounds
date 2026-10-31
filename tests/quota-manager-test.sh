@@ -22,6 +22,21 @@ else
   exit 1
 fi
 
+COLLECTOR="${REPO_ROOT}/build/AgentDashboard.app/Contents/Resources/ai_quota_collector.py"
+if [[ ! -f "${COLLECTOR}" ]]; then
+  echo "FAIL: bundled collector is missing" >&2
+  exit 1
+fi
+if grep -q '/Users/gabrielzurita' "${COLLECTOR}"; then
+  echo "FAIL: bundled collector has a personal home path" >&2
+  exit 1
+fi
+if grep -q '.agents/scripts/ai_quota_collector.py' "${REPO_ROOT}/ui/AgentSoundsMenu.swift"; then
+  echo "FAIL: menu still runs the home collector" >&2
+  exit 1
+fi
+echo "PASS: menu bundle contains the shipped collector"
+
 echo "=== Test 3: Rank quota pools from the 29 Oct 2026 snapshot ==="
 SWIFTC=$(command -v swiftc || echo "/usr/bin/swiftc")
 SUGGESTION_SRC="${REPO_ROOT}/ui/QuotaPoolSuggestion.swift"
