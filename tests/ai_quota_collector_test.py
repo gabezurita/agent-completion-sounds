@@ -6,6 +6,7 @@ import io
 import json
 import os
 import sys
+import tempfile
 import time
 import unittest
 from unittest.mock import MagicMock, mock_open, patch
@@ -350,6 +351,26 @@ class TestAiQuotaCollector(unittest.TestCase):
             self.assertEqual(res["total_ai_credits"], 1.08)
             self.assertEqual(res["today"]["events_count"], 3)
             self.assertEqual(res["today"]["ai_credits_used"], 0.25)
+
+    def test_ensure_cli_path_prepends_existing_user_bins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            local_bin = os.path.join(tmp, ".local", "bin")
+            os.makedirs(local_bin)
+            missing = os.path.join(tmp, "missing-bin")
+            gui_path = "/usr/bin:/bin:/usr/sbin:/sbin"
+            with patch.dict(os.environ, {"PATH": gui_path}), patch.object(
+                ai_quota_collector,
+                "cli_path_prefixes",
+                return_value=[local_bin, missing],
+            ):
+                path = ai_quota_collector.ensure_cli_path()
+                again = ai_quota_collector.ensure_cli_path()
+            entries = path.split(":")
+            self.assertEqual(entries[0], local_bin)
+            self.assertNotIn(missing, entries)
+            self.assertEqual(entries.count(local_bin), 1)
+            self.assertIn("/usr/bin", entries)
+            self.assertEqual(again, path)
 
     def test_collector_source_has_no_personal_home(self):
         with open(ai_quota_collector.__file__, encoding="utf-8") as handle:

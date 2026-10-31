@@ -56,6 +56,32 @@ def get_real_home() -> str:
     return os.path.expanduser("~")
 
 
+def cli_path_prefixes(home: str | None = None) -> list[str]:
+    """Bin directories a login shell has and a launchd GUI app does not."""
+    root = home if home is not None else get_real_home()
+    return [
+        os.path.join(root, ".local", "bin"),
+        os.path.join(root, ".antigravity-ide", "antigravity-ide", "bin"),
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+    ]
+
+
+def ensure_cli_path(home: str | None = None) -> str:
+    """Prepend existing user CLI directories to PATH.
+
+    setup launches Agent Dashboard with open, so the menu's PATH is the
+    launchd default and does not include Homebrew or ~/.local/bin.
+    """
+    parts = [entry for entry in os.environ.get("PATH", "").split(":") if entry]
+    for prefix in reversed(cli_path_prefixes(home)):
+        if prefix not in parts and os.path.isdir(prefix):
+            parts.insert(0, prefix)
+    path = ":".join(parts)
+    os.environ["PATH"] = path
+    return path
+
+
 def format_countdown(target_iso: str | None) -> str:
     """Calculates human-readable countdown to a reset timestamp."""
     if not target_iso:
@@ -772,6 +798,7 @@ def collect_opencode_usage() -> dict[str, Any]:
 
 def collect_all_data() -> dict[str, Any]:
     """Collects usage data across all providers concurrently."""
+    ensure_cli_path()
     results: dict[str, Any] = {}
     threads = []
 
