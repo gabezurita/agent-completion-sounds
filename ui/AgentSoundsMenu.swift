@@ -286,10 +286,10 @@ class QuotaManager {
         let cached = loadCachedData()
         let shouldRefresh: Bool
         if let last = lastFetchTime {
-            shouldRefresh = Date().timeIntervalSince(last) > 60
+            shouldRefresh = Date().timeIntervalSince(last) > 30
         } else if let attrs = try? FileManager.default.attributesOfItem(atPath: cachePath),
                   let modDate = attrs[.modificationDate] as? Date {
-            shouldRefresh = Date().timeIntervalSince(modDate) > 60
+            shouldRefresh = Date().timeIntervalSince(modDate) > 30
         } else {
             shouldRefresh = true
         }
@@ -300,7 +300,7 @@ class QuotaManager {
         return cached
     }
 
-    func refreshInBackground(completion: (([String: Any]?) -> Void)? = nil) {
+    func refreshInBackground(force: Bool = false, completion: (([String: Any]?) -> Void)? = nil) {
         guard !isFetching else { return }
         isFetching = true
 
@@ -310,7 +310,11 @@ class QuotaManager {
             if FileManager.default.fileExists(atPath: script) {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-                process.arguments = ["python3", script, "--json"]
+                var args = ["python3", script, "--json"]
+                if force {
+                    args.append("--refresh")
+                }
+                process.arguments = args
                 try? process.run()
                 process.waitUntilExit()
             }
@@ -517,8 +521,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateStatusIcon()
         rebuildMenu()
 
-        // Background timer to refresh quota data and menu bar title every 60s
-        Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+        // Background timer to refresh quota data and menu bar title every 30s
+        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             QuotaManager.shared.refreshInBackground { _ in
                 self?.updateStatusIcon()
             }
@@ -1283,7 +1287,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func refreshQuotasAction() {
-        QuotaManager.shared.refreshInBackground { [weak self] _ in
+        QuotaManager.shared.refreshInBackground(force: true) { [weak self] _ in
             self?.updateStatusIcon()
             self?.rebuildMenu()
         }

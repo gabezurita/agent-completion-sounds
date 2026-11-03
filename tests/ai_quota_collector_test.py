@@ -651,6 +651,105 @@ class TestAiQuotaCollector(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_has_expired_reset_window_checks_timestamps(self):
+        past_iso = "2020-01-01T00:00:00Z"
+        future_iso = "2099-01-01T00:00:00Z"
+
+        # Bucket with < 100% and past reset time -> True
+        stale_data = {
+            "providers": {
+                "antigravity": {
+                    "buckets": {
+                        "gemini_5h": {
+                            "remaining_percent": 88,
+                            "reset_time": past_iso,
+                        }
+                    }
+                }
+            }
+        }
+        self.assertTrue(ai_quota_collector.has_expired_reset_window(stale_data))
+
+        # Bucket with 100% and past reset time -> False (already full)
+        full_data = {
+            "providers": {
+                "antigravity": {
+                    "buckets": {
+                        "gemini_5h": {
+                            "remaining_percent": 100,
+                            "reset_time": past_iso,
+                        }
+                    }
+                }
+            }
+        }
+        self.assertFalse(ai_quota_collector.has_expired_reset_window(full_data))
+
+        # Bucket with < 100% and future reset time -> False
+        fresh_data = {
+            "providers": {
+                "antigravity": {
+                    "buckets": {
+                        "gemini_5h": {
+                            "remaining_percent": 88,
+                            "reset_time": future_iso,
+                        }
+                    }
+                }
+            }
+        }
+        self.assertFalse(ai_quota_collector.has_expired_reset_window(fresh_data))
+
+        # Rate limit (e.g. codex) with < 100% and past reset time -> True
+        stale_codex = {
+            "providers": {
+                "codex": {
+                    "rate_limits": {
+                        "weekly": {
+                            "remaining_percent": 34,
+                            "reset_time": past_iso,
+                        }
+                    }
+                }
+            }
+        }
+        self.assertTrue(ai_quota_collector.has_expired_reset_window(stale_codex))
+
+    @patch("subprocess.run")
+    def test_collect_antigravity_usage_force_refresh_bypasses_cache(self, mock_run):
+        mock_agy_json = {
+            "command": {
+                "name": "usage",
+                "data": {
+                    "groups": [
+                        {
+                            "name": "Gemini Models",
+                            "buckets": [
+                                {
+                                    "id": "gemini-weekly",
+                                    "name": "Weekly Limit",
+                                    "remaining_fraction": 0.34,
+                                    "reset_time": "2099-01-01T00:00:00Z",
+                                }
+                            ],
+                        }
+                    ]
+                },
+            }
+        }
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(mock_agy_json)
+        )
+
+        with patch("os.path.exists", return_value=True), patch(
+            "builtins.open", mock_open(read_data=json.dumps({"command": {"data": {"groups": []}}}))
+        ), patch("os.path.getmtime", return_value=time.time()):
+            # force_refresh=True must call subprocess.run instead of returning mock_open data
+            res = ai_quota_collector.collect_antigravity_usage(force_refresh=True)
+            self.assertEqual(res["status"], "ok")
+            mock_run.assert_called_once()
+            self.assertEqual(res["buckets"]["gemini_weekly"]["remaining_percent"], 34)
+
 
 if __name__ == "__main__":
     unittest.main()
