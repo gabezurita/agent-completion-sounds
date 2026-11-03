@@ -289,17 +289,38 @@ def collect_cursor_usage() -> dict[str, Any]:
 # Provider: Antigravity (agy / Gemini)
 # ─────────────────────────────────────────────────────────────
 
-def collect_antigravity_usage() -> dict[str, Any]:
+def collect_antigravity_usage(force_refresh: bool = False) -> dict[str, Any]:
     """Collects Antigravity (agy) model limits via headless /usage."""
     # Check if a recent usage cache exists
     agy_cache_file = "/tmp/agy_usage_cache.json"
     data = None
-    if os.path.exists(agy_cache_file):
+    if not force_refresh and os.path.exists(agy_cache_file):
         try:
             mtime = os.path.getmtime(agy_cache_file)
-            if time.time() - mtime < 120:
+            if time.time() - mtime < CACHE_TTL_SECONDS:
                 with open(agy_cache_file, "r") as f:
-                    data = json.load(f)
+                    candidate = json.load(f)
+                groups = candidate.get("command", {}).get("data", {}).get("groups", [])
+                if not groups and "groups" in candidate:
+                    groups = candidate["groups"]
+                now = datetime.now(timezone.utc)
+                has_expired = False
+                for g in groups:
+                    for b in g.get("buckets", []):
+                        rf = b.get("remaining_fraction")
+                        rt = b.get("reset_time")
+                        if rf is not None and rf < 1.0 and rt:
+                            clean_iso = rt.replace("Z", "+00:00")
+                            try:
+                                if datetime.fromisoformat(clean_iso) <= now:
+                                    has_expired = True
+                                    break
+                            except Exception:
+                                pass
+                    if has_expired:
+                        break
+                if not has_expired:
+                    data = candidate
         except Exception:
             pass
 
@@ -1032,7 +1053,49 @@ def collect_opencode_usage() -> dict[str, Any]:
 # Orchestration & Cache Management
 # ─────────────────────────────────────────────────────────────
 
-def collect_all_data() -> dict[str, Any]:
+def has_expired_reset_window(data: dict[str, Any]) -> bool:
+    """Returns True if any cached bucket has passed its reset time and is not at 100%."""
+    now = datetime.now(timezone.utc)
+    providers = data.get("providers", {})
+    for p_data in providers.values():
+        if not isinstance(p_data, dict):
+            continue
+        # Check buckets (e.g. antigravity, copilot)
+        buckets = p_data.get("buckets", {})
+        if isinstance(buckets, dict):
+            for b in buckets.values():
+                if not isinstance(b, dict):
+                    continue
+                rem = b.get("remaining_percent")
+                reset_iso = b.get("reset_time")
+                if rem is not None and rem < 100 and reset_iso:
+                    try:
+                        clean_iso = reset_iso.replace("Z", "+00:00")
+                        reset_dt = datetime.fromisoformat(clean_iso)
+                        if reset_dt <= now:
+                            return True
+                    except Exception:
+                        pass
+        # Check rate_limits (e.g. codex)
+        rl = p_data.get("rate_limits", {})
+        if isinstance(rl, dict):
+            for r in rl.values():
+                if not isinstance(r, dict):
+                    continue
+                rem = r.get("remaining_percent")
+                reset_iso = r.get("reset_time")
+                if rem is not None and rem < 100 and reset_iso:
+                    try:
+                        clean_iso = reset_iso.replace("Z", "+00:00")
+                        reset_dt = datetime.fromisoformat(clean_iso)
+                        if reset_dt <= now:
+                            return True
+                    except Exception:
+                        pass
+    return False
+
+
+def collect_all_data(force_refresh: bool = False) -> dict[str, Any]:
     """Collects usage data across all providers concurrently."""
     ensure_cli_path()
     results: dict[str, Any] = {}
@@ -1040,6 +1103,11 @@ def collect_all_data() -> dict[str, Any]:
 
     def run_collector(name: str, fn: Any):
         try:
+            if name == "antigravity":
+                results[name] = fn(force_refresh=force_refresh)
+            else:
+                results[name] = fn()
+        except TypeError:
             results[name] = fn()
         except Exception as exc:
             results[name] = {"status": "error", "error": str(exc)}
@@ -1076,12 +1144,14 @@ def get_cached_or_fresh(force_refresh: bool = False) -> dict[str, Any]:
             age = time.time() - mtime
             if age < CACHE_TTL_SECONDS:
                 with open(CACHE_FILE, "r") as f:
-                    return json.load(f)
+                    cached = json.load(f)
+                if not has_expired_reset_window(cached):
+                    return cached
         except Exception:
             pass
 
-    # If cache is older or missing, do fresh collection
-    data = collect_all_data()
+    # If cache is older, missing, forced, or has expired reset windows, do fresh collection
+    data = collect_all_data(force_refresh=force_refresh)
     try:
         tmp_file = f"{CACHE_FILE}.tmp"
         with open(tmp_file, "w") as f:
