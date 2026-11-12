@@ -327,10 +327,12 @@ if [[ -z "${last_clip}" && -f "${SESSION_CACHE_DIR}/global.last" ]]; then
 fi
 
 candidate_clips=()
-for c in "${clips[@]}"; do
-  [[ -n "${last_clip}" && "${c}" == "${last_clip}" ]] && continue
-  candidate_clips+=("${c}")
-done
+if ((${#clips[@]} > 0)); then
+  for c in "${clips[@]}"; do
+    [[ -n "${last_clip}" && "${c}" == "${last_clip}" ]] && continue
+    candidate_clips+=("${c}")
+  done
+fi
 
 clip=""
 count=${#clips[@]}

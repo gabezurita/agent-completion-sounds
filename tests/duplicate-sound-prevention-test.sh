@@ -249,4 +249,16 @@ for ((i = 1; i < ${#sess_B_plays[@]}; i++)); do
 done
 echo "PASS: Interleaved sessions each preserved non-repetition independently"
 
+echo "=== Test 6: Empty unit safely reaches fallback without unbound variable error ==="
+mkdir -p "${TEST_SOUNDS}/unit-empty"
+: > "${PLAY_LOG}"
+run_player "sess-empty" "unit-empty"
+wait_for_plays 1 >/dev/null
+plays=$(count_plays)
+if [[ "${plays}" -lt 1 ]]; then
+  echo "FAIL: Empty unit failed to trigger fallback playback" >&2
+  exit 1
+fi
+echo "PASS: Empty unit safely fell back without unbound variable abort"
+
 echo "duplicate-sound-prevention-test: ALL PASS"
