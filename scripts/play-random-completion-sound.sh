@@ -350,8 +350,8 @@ if [[ -n "${clip}" ]]; then
   fi
 
   if command -v python3 >/dev/null 2>&1; then
-    # Double-fork daemon with setsid to completely decouple from hook runner process group and controlling TTY (e.g. iTerm/VS Code)
-    python3 - "${clip}" "${VOLUME}" "${LOG_FILE}" <<'PY'
+    log_msg "launching python background player"
+    if ! python3 - "${clip}" "${VOLUME}" "${LOG_FILE}" <<'PY'
 import os, sys, shutil, subprocess, datetime
 
 clip = sys.argv[1]
@@ -380,11 +380,19 @@ elif shutil.which("aplay"):
     player_cmd = ["aplay", "-q", clip]
 
 if player_cmd:
-    if os.fork() > 0:
-        sys.exit(0)
-    os.setsid()
-    if os.fork() > 0:
-        os._exit(0)
+    log(f"spawn: player_cmd={' '.join(player_cmd)}")
+    try:
+        if os.fork() > 0:
+            sys.exit(0)
+        try:
+            os.setsid()
+        except Exception as se:
+            log(f"setsid warning: {se}")
+        if os.fork() > 0:
+            os._exit(0)
+    except Exception as fe:
+        log(f"fork fallback (executing directly): {fe}")
+
     log(f"executing: {' '.join(player_cmd)}")
     try:
         res = subprocess.run(player_cmd, capture_output=True, text=True)
@@ -396,6 +404,9 @@ if player_cmd:
         log(f"playback exception: {e}")
     sys.exit(0)
 PY
+    then
+      log_msg "python background player launch failed"
+    fi
   elif command -v setsid >/dev/null 2>&1; then
     # On Linux, run in a new process group so it survives hook process group reaping
     (setsid paplay "${clip}" >/dev/null 2>&1 &) || (setsid aplay -q "${clip}" >/dev/null 2>&1 &) || (paplay "${clip}" >/dev/null 2>&1 &)
