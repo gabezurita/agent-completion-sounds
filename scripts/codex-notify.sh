@@ -4,8 +4,40 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PLAYER_SCRIPT="${AGENT_SOUND_PLAYER:-${SCRIPT_DIR}/play-random-completion-sound.sh}"
 
-# Codex appends its notification payload as argv[1]. Playback does not need it.
-: "${1:-}"
+# Codex passes its notification payload as an argument (typically argv[1]).
+# Allow stdin as a fallback when argv is omitted or non-interactive.
+payload=""
+pass_args=()
+for arg in "$@"; do
+  if [[ "${arg}" =~ ^\{.*\}$ ]]; then
+    payload="${arg}"
+  else
+    pass_args+=("${arg}")
+  fi
+done
 
-printf '%s\n' '{}' | "${SCRIPT_DIR}/play-random-completion-sound.sh"
+if [[ -z "${payload}" && -n "${1:-}" ]]; then
+  payload="${1}"
+elif [[ -z "${payload}" && ! -t 0 ]]; then
+  payload=$(cat 2>/dev/null || true)
+fi
+
+thread_id=""
+if [[ -n "${payload}" ]]; then
+  thread_id=$(printf '%s' "${payload}" | grep -oE '"(thread-id|thread_id|threadId|conversationId|conversation_id|session_id|sessionId)"[[:space:]]*:[[:space:]]*"[^"]+"' | head -n 1 | sed -E 's/.*:[[:space:]]*"([^"]+)".*/\1/' || true)
+  thread_id="${thread_id//[^a-zA-Z0-9_.-]/_}"
+fi
+
+if [[ -n "${thread_id}" ]]; then
+  out_payload=$(printf '{"session_id":"%s"}' "${thread_id}")
+else
+  out_payload='{}'
+fi
+
+if ((${#pass_args[@]} > 0)); then
+  printf '%s\n' "${out_payload}" | "${PLAYER_SCRIPT}" "${pass_args[@]}"
+else
+  printf '%s\n' "${out_payload}" | "${PLAYER_SCRIPT}"
+fi
