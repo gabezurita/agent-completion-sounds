@@ -14,6 +14,7 @@ MOCK_BIN="${TEST_ROOT}/bin"
 PLAY_LOG="${TEST_ROOT}/play.log"
 mkdir -p "${MOCK_BIN}" "${TEST_CACHE}" "${TEST_SOUNDS}"
 : > "${PLAY_LOG}"
+: > "${TEST_ROOT}/fallback.wav"
 
 # Mock audio player so no actual sounds play, but record the played clip path
 cat > "${MOCK_BIN}/afplay" <<SH
@@ -82,6 +83,7 @@ run_player() {
     PATH="${MOCK_BIN}:${PATH}"
     TMPDIR="${TEST_ROOT}"
     AGENT_SOUNDS_ROOT="${TEST_SOUNDS}"
+    AGENT_SOUNDS_FALLBACK="${TEST_ROOT}/fallback.wav"
     AGENT_SOUND_COOLDOWN_SECS=0
   )
   if [[ -n "${unit_override}" ]]; then
