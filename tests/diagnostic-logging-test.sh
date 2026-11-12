@@ -93,7 +93,7 @@ echo "PASS: soundmode log prints diagnostic log output"
 
 echo "=== Test 6: soundmode status displays log file path ==="
 status_output=$("${SCRIPT_DIR}/scripts/sound-mode.sh" status)
-[[ "${status_output}" =~ "Log: ${LOG_FILE}" ]] || {
+[[ "${status_output}" == *"Log: ${LOG_FILE}"* ]] || {
   echo "FAIL: soundmode status did not display log path"
   echo "${status_output}"
   exit 1
