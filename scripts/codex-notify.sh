@@ -5,6 +5,14 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PLAYER_SCRIPT="${AGENT_SOUND_PLAYER:-${SCRIPT_DIR}/play-random-completion-sound.sh}"
+LOG_FILE="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
+
+log_msg() {
+  local ts
+  ts=$(date '+%Y-%m-%d %H:%M:%S')
+  mkdir -p "$(dirname "${LOG_FILE}")" 2>/dev/null || true
+  printf '[%s] [%s:%s] [codex-notify] %s\n' "${ts}" "$$" "${PPID:-0}" "$*" >> "${LOG_FILE}" 2>/dev/null || true
+}
 
 # Codex passes its notification payload as an argument (typically argv[1]).
 # Allow stdin as a fallback when argv is omitted or non-interactive.
@@ -35,6 +43,8 @@ if [[ -n "${thread_id}" ]]; then
 else
   out_payload='{}'
 fi
+
+log_msg "invoked: thread_id='${thread_id:-<none>}' args='$*' payload_len=${#payload}"
 
 if ((${#pass_args[@]} > 0)); then
   printf '%s\n' "${out_payload}" | "${PLAYER_SCRIPT}" "${pass_args[@]}"
