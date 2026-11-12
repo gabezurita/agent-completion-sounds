@@ -45,9 +45,14 @@ else
 fi
 
 log_msg "invoked: thread_id='${thread_id:-<none>}' args='$*' payload_len=${#payload}"
+log_msg "executing player: PLAYER_SCRIPT='${PLAYER_SCRIPT}' payload='${out_payload}' pass_args='${pass_args[*]:-}'"
 
 if ((${#pass_args[@]} > 0)); then
   printf '%s\n' "${out_payload}" | "${PLAYER_SCRIPT}" "${pass_args[@]}"
+  res=$?
 else
   printf '%s\n' "${out_payload}" | "${PLAYER_SCRIPT}"
+  res=$?
 fi
+
+log_msg "player exited with status ${res}"

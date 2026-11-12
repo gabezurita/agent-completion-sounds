@@ -27,6 +27,8 @@ log_msg() {
   printf '[%s] [%s:%s] [player] %s\n' "${ts}" "$$" "${PPID:-0}" "$*" >> "${LOG_FILE}" 2>/dev/null || true
 }
 
+log_msg "entered: args='$*' payload_len=${#payload}"
+
 if [[ "${AGENT_COMPLETION_SOUND_PREVIEW:-}" != "1" && ( -f "${DISABLE_FILE}" || "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ) ]]; then
   log_msg "suppressed: disabled (sentinel file '${DISABLE_FILE}' exists or AGENT_COMPLETION_SOUND_DISABLE=1)"
   printf '%s\n' '{}'
