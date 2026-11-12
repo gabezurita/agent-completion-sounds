@@ -18,8 +18,17 @@ SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
 ACTIVE_WINDOW_SECS="${AGENT_SOUND_ACTIVE_WINDOW_SECS:-7200}"
 COOLDOWN_SECS="${AGENT_SOUND_COOLDOWN_SECS:-15}"
 DISABLE_FILE="${SOUNDS_ROOT}/.disabled"
+LOG_FILE="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
+
+log_msg() {
+  local ts
+  ts=$(date '+%Y-%m-%d %H:%M:%S')
+  mkdir -p "$(dirname "${LOG_FILE}")" 2>/dev/null || true
+  printf '[%s] [%s:%s] [player] %s\n' "${ts}" "$$" "${PPID:-0}" "$*" >> "${LOG_FILE}" 2>/dev/null || true
+}
 
 if [[ "${AGENT_COMPLETION_SOUND_PREVIEW:-}" != "1" && ( -f "${DISABLE_FILE}" || "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ) ]]; then
+  log_msg "suppressed: disabled (sentinel file '${DISABLE_FILE}' exists or AGENT_COMPLETION_SOUND_DISABLE=1)"
   printf '%s\n' '{}'
   exit 0
 fi
@@ -41,6 +50,7 @@ done
 MODE=$(cat "${MODE_FILE}" 2>/dev/null || echo "session")
 
 if [[ "${MODE}" == "off" || "${MODE}" == "mute" || "${MODE}" == "disabled" ]]; then
+  log_msg "suppressed: mode is '${MODE}'"
   printf '%s\n' '{}'
   exit 0
 fi
@@ -60,6 +70,7 @@ fi
 
 # In multi-step agent runs (e.g. Antigravity PreInvocation), suppress intermediate tool steps
 if [[ -n "${invocation_num}" && "${invocation_num}" -gt 1 ]]; then
+  log_msg "suppressed: intermediate tool invocation (${invocation_num}) for session '${session_id:-global}'"
   printf '%s\n' '{}'
   exit 0
 fi
@@ -275,17 +286,20 @@ if ((COOLDOWN_SECS > 0)); then
   if [[ "${event}" == "stop" ]]; then
     # Suppress end sound if turn finished too quickly after start sound (short turn)
     if ((last_start_ts > 0 && (now - last_start_ts < COOLDOWN_SECS))); then
+      log_msg "suppressed: short turn (elapsed $((now - last_start_ts))s < cooldown ${COOLDOWN_SECS}s, session='${session_id:-global}')"
       printf '%s\n' '{}'
       exit 0
     fi
     # Suppress end sound if any sound was played too recently (duplicate stop hooks)
     if ((last_sound_ts > 0 && (now - last_sound_ts < COOLDOWN_SECS))); then
+      log_msg "suppressed: cooldown active (elapsed $((now - last_sound_ts))s < cooldown ${COOLDOWN_SECS}s, session='${session_id:-global}')"
       printf '%s\n' '{}'
       exit 0
     fi
   elif [[ "${event}" == "start" ]]; then
     # Throttle duplicate start hooks within 2 seconds
     if ((last_start_ts > 0 && (now - last_start_ts < 2))); then
+      log_msg "suppressed: duplicate start hook (elapsed $((now - last_start_ts))s < 2s, session='${session_id:-global}')"
       printf '%s\n' '{}'
       exit 0
     fi
@@ -327,6 +341,7 @@ fi
 
 # 5. Play detached
 if [[ -n "${clip}" ]]; then
+  log_msg "dispatch: event=${event} session=${session_id:-global} unit=${selected_unit:-<none>} volume=${VOLUME} clip=${clip}"
   mkdir -p "${SESSION_CACHE_DIR}"
   if [[ "${event}" == "start" ]]; then
     printf '%s %s\n' "${now}" "${now}" > "${state_file}"
@@ -336,11 +351,22 @@ if [[ -n "${clip}" ]]; then
 
   if command -v python3 >/dev/null 2>&1; then
     # Double-fork daemon with setsid to completely decouple from hook runner process group and controlling TTY (e.g. iTerm/VS Code)
-    python3 - "${clip}" "${VOLUME}" <<'PY'
-import os, sys, shutil
+    python3 - "${clip}" "${VOLUME}" "${LOG_FILE}" <<'PY'
+import os, sys, shutil, subprocess, datetime
 
 clip = sys.argv[1]
 volume = sys.argv[2]
+log_file = sys.argv[3] if len(sys.argv) > 3 else ""
+
+def log(msg):
+    if not log_file:
+        return
+    try:
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_file, "a") as f:
+            f.write(f"[{ts}] [{os.getpid()}] [player] {msg}\n")
+    except Exception:
+        pass
 
 player_cmd = []
 if clip.lower().endswith(".ogg") and shutil.which("ffplay"):
@@ -359,13 +385,16 @@ if player_cmd:
     os.setsid()
     if os.fork() > 0:
         os._exit(0)
-    devnull = os.open(os.devnull, os.O_RDWR)
-    os.dup2(devnull, 0)
-    os.dup2(devnull, 1)
-    os.dup2(devnull, 2)
-    if devnull > 2:
-        os.close(devnull)
-    os.execvp(player_cmd[0], player_cmd)
+    log(f"executing: {' '.join(player_cmd)}")
+    try:
+        res = subprocess.run(player_cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            log("playback complete (code=0)")
+        else:
+            log(f"playback error (code={res.returncode}): {res.stderr.strip() or res.stdout.strip()}")
+    except Exception as e:
+        log(f"playback exception: {e}")
+    sys.exit(0)
 PY
   elif command -v setsid >/dev/null 2>&1; then
     # On Linux, run in a new process group so it survives hook process group reaping
@@ -377,6 +406,8 @@ PY
   elif command -v aplay >/dev/null 2>&1; then
     (aplay -q "${clip}" >/dev/null 2>&1 &)
   fi
+else
+  log_msg "suppressed: no matching audio clip found (session='${session_id:-global}')"
 fi
 
 printf '%s\n' '{}'

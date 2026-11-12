@@ -83,13 +83,28 @@ case "$arg" in
     echo "Sound Mode: ${curr_mode}"
     echo "Sound State: ${sound_state}"
     echo "Favorites: ${fav_count} of ${total_units} unit packs"
+    log_file="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
+    echo "Log: ${log_file}"
+    ;;
+  log | logs)
+    log_file="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
+    num_lines="${2:-25}"
+    if [[ ! -f "${log_file}" ]]; then
+      echo "No log file found at ${log_file}"
+      exit 0
+    fi
+    if [[ "${num_lines}" == "-f" || "${num_lines}" == "follow" ]]; then
+      exec tail -f "${log_file}"
+    else
+      tail -n "${num_lines}" "${log_file}"
+    fi
     ;;
   *)
     if [[ -d "${SOUNDS_ROOT}/${arg}" ]]; then
       printf '%s\n' "$arg" > "${MODE_FILE}"
       echo "Sound mode: locked to unit '$arg'"
     else
-      echo "Usage: soundmode [session|favorites|all|session-all|mute|unmute|toggle-mute|status|<unit-folder>|toggle|clear]" >&2
+      echo "Usage: soundmode [session|favorites|all|session-all|mute|unmute|toggle-mute|status|log|<unit-folder>|toggle|clear]" >&2
       exit 1
     fi
     ;;
