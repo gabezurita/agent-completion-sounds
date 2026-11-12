@@ -5,6 +5,8 @@ import Cocoa
 class SoundManager {
     static let shared = SoundManager()
 
+    private var lastPlayedClipURL: URL?
+
     var soundsRoot: URL {
         if let envRoot = ProcessInfo.processInfo.environment["AGENT_SOUNDS_ROOT"], !envRoot.isEmpty {
             return URL(fileURLWithPath: envRoot).resolvingSymlinksInPath()
@@ -182,7 +184,15 @@ class SoundManager {
                     }
                 }
             }
-            if let clip = audioFiles.randomElement() {
+            let candidates: [URL]
+            if audioFiles.count > 1, let lastURL = lastPlayedClipURL {
+                let filtered = audioFiles.filter { $0 != lastURL }
+                candidates = filtered.isEmpty ? audioFiles : filtered
+            } else {
+                candidates = audioFiles
+            }
+            if let clip = candidates.randomElement() {
+                lastPlayedClipURL = clip
                 let task = Process()
                 task.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
                 task.arguments = [clip.path]

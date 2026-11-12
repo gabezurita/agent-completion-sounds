@@ -12,7 +12,7 @@ payload=$(cat 2>/dev/null || true)
 SOUNDS_ROOT="${AGENT_SOUNDS_ROOT:-${HOME}/sounds}"
 FAVORITES_FILE="${SOUNDS_ROOT}/favorites.txt"
 MODE_FILE="${SOUNDS_ROOT}/.mode"
-FALLBACK="/System/Library/Sounds/Glass.aiff"
+FALLBACK="${AGENT_SOUNDS_FALLBACK:-/System/Library/Sounds/Glass.aiff}"
 VOLUME="${AGENT_COMPLETION_SOUND_VOLUME:-0.45}"
 SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
 ACTIVE_WINDOW_SECS="${AGENT_SOUND_ACTIVE_WINDOW_SECS:-7200}"
@@ -331,9 +331,28 @@ done < <(
     -type f -print0 2>/dev/null
 )
 
+# Read the last played clip to avoid playing the exact same sound consecutively
+last_clip=""
+if [[ -n "${session_id}" && -f "${SESSION_CACHE_DIR}/${session_id}.last" ]]; then
+  last_clip=$(cat "${SESSION_CACHE_DIR}/${session_id}.last" 2>/dev/null || true)
+fi
+if [[ -z "${last_clip}" && -f "${SESSION_CACHE_DIR}/global.last" ]]; then
+  last_clip=$(cat "${SESSION_CACHE_DIR}/global.last" 2>/dev/null || true)
+fi
+
+candidate_clips=()
+if ((${#clips[@]} > 0)); then
+  for c in "${clips[@]}"; do
+    [[ -n "${last_clip}" && "${c}" == "${last_clip}" ]] && continue
+    candidate_clips+=("${c}")
+  done
+fi
+
 clip=""
 count=${#clips[@]}
-if ((count > 0)); then
+if ((${#candidate_clips[@]} > 0)); then
+  clip="${candidate_clips[RANDOM % ${#candidate_clips[@]}]}"
+elif ((count > 0)); then
   clip="${clips[RANDOM % count]}"
 elif [[ -f "${FALLBACK}" ]]; then
   clip="${FALLBACK}"
@@ -347,6 +366,10 @@ if [[ -n "${clip}" ]]; then
     printf '%s %s\n' "${now}" "${now}" > "${state_file}"
   else
     printf '%s %s\n' "${last_start_ts}" "${now}" > "${state_file}"
+  fi
+  printf '%s\n' "${clip}" > "${SESSION_CACHE_DIR}/global.last"
+  if [[ -n "${session_id}" ]]; then
+    printf '%s\n' "${clip}" > "${SESSION_CACHE_DIR}/${session_id}.last"
   fi
 
   if command -v python3 >/dev/null 2>&1; then
