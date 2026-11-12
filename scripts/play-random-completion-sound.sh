@@ -425,6 +425,20 @@ if player_cmd:
             log("playback complete (code=0)")
         else:
             log(f"playback error (code={res.returncode}): {res.stderr.strip() or res.stdout.strip()}")
+            fallbacks = []
+            if shutil.which("ffplay"):
+                vol = max(0, min(100, int(float(volume) * 100)))
+                fallbacks.append(["ffplay", "-nodisp", "-autoexit", "-loglevel", "error", "-volume", str(vol), clip])
+            if shutil.which("play"):
+                fallbacks.append(["play", "-q", "-v", str(volume), clip])
+            for fb in fallbacks:
+                log(f"trying fallback player: {' '.join(fb)}")
+                fb_res = subprocess.run(fb, capture_output=True, text=True)
+                if fb_res.returncode == 0:
+                    log("fallback playback complete (code=0)")
+                    break
+                else:
+                    log(f"fallback error (code={fb_res.returncode}): {fb_res.stderr.strip() or fb_res.stdout.strip()}")
     except Exception as e:
         log(f"playback exception: {e}")
     sys.exit(0)
