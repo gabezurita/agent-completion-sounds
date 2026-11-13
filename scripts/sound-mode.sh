@@ -6,6 +6,7 @@ set -euo pipefail
 
 SOUNDS_ROOT="${AGENT_SOUNDS_ROOT:-${HOME}/sounds}"
 MODE_FILE="${SOUNDS_ROOT}/.mode"
+COOLDOWN_FILE="${SOUNDS_ROOT}/.cooldown"
 SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
 arg="${1:-}"
 
@@ -83,8 +84,29 @@ case "$arg" in
     echo "Sound Mode: ${curr_mode}"
     echo "Sound State: ${sound_state}"
     echo "Favorites: ${fav_count} of ${total_units} unit packs"
+    cd_val=2
+    if [[ -f "${COOLDOWN_FILE}" ]]; then
+      cd_val=$(cat "${COOLDOWN_FILE}" 2>/dev/null || echo 2)
+    fi
+    echo "Cooldown: ${cd_val}s"
     log_file="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
     echo "Log: ${log_file}"
+    ;;
+  cooldown)
+    val="${2:-}"
+    if [[ -z "${val}" ]]; then
+      cd_val=2
+      if [[ -f "${COOLDOWN_FILE}" ]]; then
+        cd_val=$(cat "${COOLDOWN_FILE}" 2>/dev/null || echo 2)
+      fi
+      echo "Sound cooldown: ${cd_val}s"
+    elif [[ "${val}" =~ ^[0-9]+$ ]]; then
+      printf '%s\n' "${val}" > "${COOLDOWN_FILE}"
+      echo "Sound cooldown: set to ${val}s"
+    else
+      echo "Error: Cooldown must be a non-negative integer (seconds)." >&2
+      exit 1
+    fi
     ;;
   log | logs)
     log_file="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
@@ -104,7 +126,7 @@ case "$arg" in
       printf '%s\n' "$arg" > "${MODE_FILE}"
       echo "Sound mode: locked to unit '$arg'"
     else
-      echo "Usage: soundmode [session|favorites|all|session-all|mute|unmute|toggle-mute|status|log|<unit-folder>|toggle|clear]" >&2
+      echo "Usage: soundmode [session|favorites|all|session-all|cooldown [N]|mute|unmute|toggle-mute|status|log|<unit-folder>|toggle|clear]" >&2
       exit 1
     fi
     ;;

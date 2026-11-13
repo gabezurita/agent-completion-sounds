@@ -182,5 +182,80 @@ if [[ "${plays}" -ne 2 ]]; then
 fi
 echo "PASS: Cooldown=0 allows immediate successive playbacks"
 
+echo "=== Test 6: Default cooldown is 2 seconds without AGENT_SOUND_COOLDOWN_SECS ==="
+: > "${PLAY_LOG}"
+rm -f "${TEST_SOUNDS}/.cooldown"
+run_player_default() {
+  local sess_id="${1:-test-default}"
+  HOME="${TEST_ROOT}" \
+  PATH="${MOCK_BIN}:${PATH}" \
+  TMPDIR="${TEST_ROOT}" \
+  AGENT_SOUNDS_ROOT="${TEST_SOUNDS}" \
+  "${PLAYER}" stop <<<"{\"conversationId\": \"${sess_id}\"}"
+}
+
+run_player_default "sess-def"
+plays=$(wait_for_plays 1)
+if [[ "${plays}" -ne 1 ]]; then
+  echo "FAIL: Expected initial play, got ${plays}" >&2
+  exit 1
+fi
+
+# Immediate stop should be throttled by default 2s cooldown
+run_player_default "sess-def"
+sleep 0.1
+plays=$(count_plays)
+if [[ "${plays}" -ne 1 ]]; then
+  echo "FAIL: Rapid stop was not throttled by default 2s cooldown, got ${plays}" >&2
+  exit 1
+fi
+
+# After 2.1 seconds, stop should play
+sleep 2.1
+run_player_default "sess-def"
+plays=$(wait_for_plays 2)
+if [[ "${plays}" -ne 2 ]]; then
+  echo "FAIL: Expected play after 2s default cooldown expired, got ${plays}" >&2
+  exit 1
+fi
+echo "PASS: Default 2s cooldown throttles rapid calls and permits play after 2 seconds"
+
+echo "=== Test 7: soundmode cooldown command and file configuration ==="
+SOUNDMODE="${REPO_ROOT}/scripts/sound-mode.sh"
+out=$(AGENT_SOUNDS_ROOT="${TEST_SOUNDS}" "${SOUNDMODE}" cooldown)
+if [[ "${out}" != *"Sound cooldown: 2s"* ]]; then
+  echo "FAIL: Expected default cooldown 2s, got: ${out}" >&2
+  exit 1
+fi
+
+set_out=$(AGENT_SOUNDS_ROOT="${TEST_SOUNDS}" "${SOUNDMODE}" cooldown 5)
+if [[ "${set_out}" != *"Sound cooldown: set to 5s"* ]]; then
+  echo "FAIL: Expected cooldown set to 5s, got: ${set_out}" >&2
+  exit 1
+fi
+read_val=$(cat "${TEST_SOUNDS}/.cooldown")
+if [[ "${read_val}" != "5" ]]; then
+  echo "FAIL: .cooldown file expected 5, got: ${read_val}" >&2
+  exit 1
+fi
+
+status_out=$(AGENT_SOUNDS_ROOT="${TEST_SOUNDS}" "${SOUNDMODE}" status)
+if [[ "${status_out}" != *"Cooldown: 5s"* ]]; then
+  echo "FAIL: Expected status to include 'Cooldown: 5s', got: ${status_out}" >&2
+  exit 1
+fi
+
+# Set back to 0 and verify instant playback via .cooldown file
+AGENT_SOUNDS_ROOT="${TEST_SOUNDS}" "${SOUNDMODE}" cooldown 0
+: > "${PLAY_LOG}"
+run_player_default "sess-zero"
+run_player_default "sess-zero"
+plays=$(wait_for_plays 2)
+if [[ "${plays}" -ne 2 ]]; then
+  echo "FAIL: Expected 2 plays with .cooldown=0, got ${plays}" >&2
+  exit 1
+fi
+echo "PASS: soundmode cooldown command and persistent configuration verified"
+
 echo "cooldown-and-throttle-test: ALL PASS"
 
