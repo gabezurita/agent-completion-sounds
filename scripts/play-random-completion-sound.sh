@@ -16,7 +16,18 @@ FALLBACK="${AGENT_SOUNDS_FALLBACK:-/System/Library/Sounds/Glass.aiff}"
 VOLUME="${AGENT_COMPLETION_SOUND_VOLUME:-0.45}"
 SESSION_CACHE_DIR="${TMPDIR:-/tmp}/agent-sound-sessions"
 ACTIVE_WINDOW_SECS="${AGENT_SOUND_ACTIVE_WINDOW_SECS:-7200}"
-COOLDOWN_SECS="${AGENT_SOUND_COOLDOWN_SECS:-15}"
+COOLDOWN_FILE="${SOUNDS_ROOT}/.cooldown"
+DEFAULT_COOLDOWN=2
+if [[ -f "${COOLDOWN_FILE}" ]]; then
+  file_cooldown=$(cat "${COOLDOWN_FILE}" 2>/dev/null || true)
+  if [[ "${file_cooldown}" =~ ^[0-9]+$ ]]; then
+    DEFAULT_COOLDOWN="${file_cooldown}"
+  fi
+fi
+COOLDOWN_SECS="${AGENT_SOUND_COOLDOWN_SECS:-${DEFAULT_COOLDOWN}}"
+if [[ ! "${COOLDOWN_SECS}" =~ ^[0-9]+$ ]]; then
+  COOLDOWN_SECS=2
+fi
 DISABLE_FILE="${SOUNDS_ROOT}/.disabled"
 LOG_FILE="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
 

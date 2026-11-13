@@ -22,8 +22,27 @@ class SoundManager {
         return soundsRoot.appendingPathComponent(".mode")
     }
 
+    var cooldownFileURL: URL {
+        return soundsRoot.appendingPathComponent(".cooldown")
+    }
+
     var favoritesFileURL: URL {
         return soundsRoot.appendingPathComponent("favorites.txt")
+    }
+
+    var currentCooldown: Int {
+        if let content = try? String(contentsOf: cooldownFileURL, encoding: .utf8) {
+            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let seconds = Int(trimmed), seconds >= 0 {
+                return seconds
+            }
+        }
+        return 2
+    }
+
+    func setCooldown(_ seconds: Int) {
+        try? FileManager.default.createDirectory(at: soundsRoot, withIntermediateDirectories: true)
+        try? ("\(seconds)\n").write(to: cooldownFileURL, atomically: true, encoding: .utf8)
     }
 
     var isMuted: Bool {
@@ -866,6 +885,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         modeMenuItem.submenu = modeSubmenu
         menu.addItem(modeMenuItem)
 
+        // Cooldown Submenu
+        let currentCooldown = SoundManager.shared.currentCooldown
+        let cooldownMenuItem = NSMenuItem(title: "Cooldown: \(currentCooldown)s", action: nil, keyEquivalent: "")
+        let cooldownSubmenu = NSMenu()
+        let cooldownPresets: [(seconds: Int, label: String, desc: String)] = [
+            (0, "0s (Instant)", "Play on every turn with no delay suppression"),
+            (2, "2s (Default)", "Quick 2-second suppression for rapid tool invocations"),
+            (5, "5s", "5-second cooldown between sounds"),
+            (10, "10s", "10-second cooldown between sounds"),
+            (15, "15s", "15-second cooldown between sounds"),
+            (30, "30s", "30-second cooldown between sounds")
+        ]
+        for p in cooldownPresets {
+            let item = NSMenuItem(title: p.label, action: #selector(setCooldownAction(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = p.seconds
+            item.toolTip = p.desc
+            item.state = (currentCooldown == p.seconds) ? .on : .off
+            cooldownSubmenu.addItem(item)
+        }
+        if !cooldownPresets.contains(where: { $0.seconds == currentCooldown }) {
+            let customItem = NSMenuItem(title: "Custom: \(currentCooldown)s", action: nil, keyEquivalent: "")
+            customItem.state = .on
+            cooldownSubmenu.addItem(NSMenuItem.separator())
+            cooldownSubmenu.addItem(customItem)
+        }
+        cooldownMenuItem.submenu = cooldownSubmenu
+        menu.addItem(cooldownMenuItem)
+
         // Icon Style Submenu
         let iconMenuItem = NSMenuItem(title: "Icon Style", action: nil, keyEquivalent: "")
         let iconSubmenu = NSMenu()
@@ -1321,6 +1369,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func setModeAction(_ sender: NSMenuItem) {
         guard let mode = sender.representedObject as? String else { return }
         SoundManager.shared.setMode(mode)
+        rebuildMenu()
+    }
+
+    @objc func setCooldownAction(_ sender: NSMenuItem) {
+        guard let seconds = sender.representedObject as? Int else { return }
+        SoundManager.shared.setCooldown(seconds)
         rebuildMenu()
     }
 
