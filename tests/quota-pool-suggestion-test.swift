@@ -232,6 +232,50 @@ func testMeasuredCursor() {
     expect(offline.isEmpty, "a provider that is not ok stays out")
 }
 
+func testClaudeMultiProfileRanking() {
+    let now = Date(timeIntervalSince1970: 1_761_868_800)
+    let ranks = QuotaPoolSuggestion.rank(
+        providers: [
+            "codex": [
+                "status": "ok",
+                "rate_limits": [
+                    "weekly": bucket(70, resetString(5 * day, now: now, style: "offset")),
+                    "five_hour": bucket(90, resetString(3 * hour, now: now, style: "offset")),
+                ],
+            ],
+            "claude": [
+                "status": "ok",
+                "profiles": [
+                    [
+                        "id": "default",
+                        "plan": "Claude Code (Personal)",
+                        "rate_limits": [
+                            "weekly": bucket(40, resetString(4 * day, now: now, style: "offset")),
+                            "five_hour": bucket(80, resetString(2 * hour, now: now, style: "offset")),
+                        ],
+                    ],
+                    [
+                        "id": "earthacre",
+                        "plan": "Claude Code (Earthacre)",
+                        "rate_limits": [
+                            "weekly": bucket(85, resetString(3 * day, now: now, style: "offset")),
+                            "five_hour": bucket(95, resetString(4 * hour, now: now, style: "offset")),
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        now: now
+    )
+    expect(ranks.map(\.id) == ["claude-earthacre", "codex", "claude"], "claude multi-profile order \(ranks.map(\.id))")
+    expect(ranks[0].name == "Claude Code (Earthacre)", "earthacre name \(ranks[0].name)")
+    expect(ranks[0].headroom == 85, "earthacre headroom \(ranks[0].headroom)")
+    expect(
+        QuotaPoolSuggestion.menuLine(for: ranks[0]) == "Use Claude Code (Earthacre) · week 85% · 5h 95%",
+        "earthacre line \(QuotaPoolSuggestion.menuLine(for: ranks[0]))"
+    )
+}
+
 @main
 struct QuotaPoolSuggestionTest {
     static func main() {
@@ -239,6 +283,7 @@ struct QuotaPoolSuggestionTest {
         testImminentFiveHourRules()
         testZeroAndTies()
         testMeasuredCursor()
+        testClaudeMultiProfileRanking()
         print("PASS: quota pool suggestion")
     }
 }

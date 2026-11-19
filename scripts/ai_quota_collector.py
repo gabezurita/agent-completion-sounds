@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import http.server
 import json
 import os
@@ -582,16 +583,81 @@ def _epoch_seconds(value: Any) -> float | None:
     return float(value)
 
 
-def load_claude_credentials() -> dict[str, Any]:
+def claude_keychain_service(config_dir: str, *, is_default: bool = False) -> str:
+    """Return the macOS Keychain service name Claude Code uses for config_dir."""
+    if is_default:
+        return CLAUDE_KEYCHAIN_SERVICE
+    digest = hashlib.sha256(os.path.realpath(config_dir).encode("utf-8")).hexdigest()[:8]
+    return f"{CLAUDE_KEYCHAIN_SERVICE}-{digest}"
+
+
+def _format_claude_profile_dir_label(suffix: str) -> str:
+    parts = [part for part in suffix.replace("_", "-").split("-") if part]
+    return " ".join(part.capitalize() for part in parts)
+
+
+def discover_claude_profiles(home: str | None = None) -> list[dict[str, Any]]:
+    """Discover the default ~/.claude profile plus any ~/.claude-* profiles."""
+    root = home if home is not None else get_real_home()
+    default_dir = os.path.join(root, ".claude")
+    profiles: list[dict[str, Any]] = [
+        {
+            "id": "default",
+            "dir_label": "",
+            "config_dir": default_dir,
+            "account_cache_path": os.path.join(root, ".claude.json"),
+            "keychain_service": CLAUDE_KEYCHAIN_SERVICE,
+            "is_default": True,
+        }
+    ]
+    try:
+        entries = sorted(os.listdir(root))
+    except OSError:
+        return profiles
+
+    for entry in entries:
+        if not entry.startswith(".claude-"):
+            continue
+        suffix = entry[len(".claude-"):].strip()
+        if not suffix:
+            continue
+        config_dir = os.path.join(root, entry)
+        if not os.path.isdir(config_dir):
+            continue
+        has_marker = any(
+            os.path.exists(os.path.join(config_dir, marker))
+            for marker in (".claude.json", ".credentials.json", "stats-cache.json")
+        )
+        if not has_marker:
+            continue
+        profiles.append(
+            {
+                "id": suffix,
+                "dir_label": _format_claude_profile_dir_label(suffix),
+                "config_dir": config_dir,
+                "account_cache_path": os.path.join(config_dir, ".claude.json"),
+                "keychain_service": claude_keychain_service(config_dir, is_default=False),
+                "is_default": False,
+            }
+        )
+    return profiles
+
+
+def load_claude_credentials(
+    config_dir: str | None = None,
+    keychain_service: str | None = None,
+) -> dict[str, Any]:
     """Read the Claude OAuth blob from the keychain or credentials file.
 
     The access token is returned only when it is non-empty and unexpired.
     Callers must not include it in cached quota output.
     """
+    service = keychain_service or CLAUDE_KEYCHAIN_SERVICE
+    target_dir = config_dir or os.path.join(get_real_home(), ".claude")
     raw = ""
     try:
         proc = subprocess.run(
-            ["security", "find-generic-password", "-s", CLAUDE_KEYCHAIN_SERVICE, "-w"],
+            ["security", "find-generic-password", "-s", service, "-w"],
             capture_output=True,
             text=True,
             timeout=2.0,
@@ -601,7 +667,7 @@ def load_claude_credentials() -> dict[str, Any]:
     except (OSError, subprocess.TimeoutExpired):
         raw = ""
     if not raw:
-        path = os.path.join(get_real_home(), ".claude", ".credentials.json")
+        path = os.path.join(target_dir, ".credentials.json")
         try:
             with open(path, "r") as handle:
                 raw = handle.read()
@@ -622,8 +688,8 @@ def load_claude_credentials() -> dict[str, Any]:
     return {"accessToken": token}
 
 
-def read_claude_account_cache() -> dict[str, Any]:
-    path = os.path.join(get_real_home(), ".claude.json")
+def read_claude_account_cache(account_cache_path: str | None = None) -> dict[str, Any]:
+    path = account_cache_path or os.path.join(get_real_home(), ".claude.json")
     try:
         with open(path, "r") as handle:
             data = json.load(handle)
@@ -634,6 +700,8 @@ def read_claude_account_cache() -> dict[str, Any]:
         "hasAvailableSubscription": bool(data.get("hasAvailableSubscription")),
         "profileFetchedAt": account.get("profileFetchedAt"),
         "accountUuid": account.get("accountUuid") or "",
+        "organizationUuid": account.get("organizationUuid") or "",
+        "organizationName": account.get("organizationName") or "",
     }
 
 
@@ -684,6 +752,64 @@ def fetch_claude_profile(token: str, api_key: str, account_uuid: str) -> dict[st
     return data
 
 
+def fetch_claude_usage(token: str) -> dict[str, Any] | None:
+    """Fetch live Claude OAuth 5h/weekly usage windows. Failures return None."""
+    if not token:
+        return None
+    url = "https://api.anthropic.com/api/oauth/usage"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "anthropic-beta": "oauth-2025-04-20",
+        "User-Agent": "agent-completion-sounds",
+        "Cache-Control": "no-cache",
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            body = resp.read().decode()
+        data = json.loads(body)
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    return data
+
+
+def parse_claude_rate_limits(usage: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalize Anthropic /api/oauth/usage windows into five_hour and weekly buckets."""
+    if not isinstance(usage, dict):
+        return {}
+    buckets: dict[str, Any] = {}
+    window_specs = (
+        ("five_hour", "five_hour", "Claude 5-Hour", 300),
+        ("seven_day", "weekly", "Claude Weekly", 10080),
+    )
+    for src_key, dst_key, label, duration_mins in window_specs:
+        raw = usage.get(src_key)
+        if not isinstance(raw, dict):
+            continue
+        util = raw.get("utilization")
+        if util is None:
+            continue
+        try:
+            used_pct = max(0, min(100, int(round(float(util)))))
+        except (TypeError, ValueError):
+            continue
+        rem_pct = max(0, 100 - used_pct)
+        reset_time = raw.get("resets_at") if isinstance(raw.get("resets_at"), str) else None
+        countdown = format_countdown(reset_time) if reset_time else ""
+        buckets[dst_key] = {
+            "id": dst_key,
+            "label": label,
+            "window_minutes": duration_mins,
+            "remaining_percent": rem_pct,
+            "used_percent": used_pct,
+            "reset_time": reset_time,
+            "reset_countdown": countdown,
+        }
+    return buckets
+
+
 def claude_cached_subscription_active(cache: dict[str, Any]) -> bool:
     fetched = _epoch_seconds(cache.get("profileFetchedAt"))
     if fetched is None:
@@ -707,17 +833,8 @@ def claude_subscription_active() -> bool:
     return claude_cached_subscription_active(cache)
 
 
-def collect_claude_usage() -> dict[str, Any]:
-    """Collect Claude Code telemetry only while a refreshed seat is active."""
-    if not claude_subscription_active():
-        return {
-            "status": "unavailable",
-            "error": "Claude subscription is not active",
-        }
-
-    real_home = get_real_home()
-    stats_file = os.path.join(real_home, ".claude/stats-cache.json")
-    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+def _read_claude_local_stats(config_dir: str, today_iso: str) -> dict[str, Any]:
+    stats_file = os.path.join(config_dir, "stats-cache.json")
     total_sessions = 0
     total_messages = 0
     today_messages = 0
@@ -733,12 +850,9 @@ def collect_claude_usage() -> dict[str, Any]:
                     today_messages = entry.get("messageCount", 0)
                     today_tool_calls = entry.get("toolCallCount", 0)
                     break
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
-
+        except Exception:
+            pass
     return {
-        "status": "ok",
-        "plan": "Claude Code",
         "total_sessions": total_sessions,
         "total_messages": total_messages,
         "today": {
@@ -746,6 +860,107 @@ def collect_claude_usage() -> dict[str, Any]:
             "message_count": today_messages,
             "tool_call_count": today_tool_calls,
         },
+    }
+
+
+def _collect_single_claude_profile(
+    spec: dict[str, Any],
+    api_key: str,
+    today_iso: str,
+) -> tuple[dict[str, Any] | None, tuple[str, str]]:
+    creds = load_claude_credentials(
+        config_dir=spec["config_dir"],
+        keychain_service=spec["keychain_service"],
+    )
+    cache = read_claude_account_cache(account_cache_path=spec["account_cache_path"])
+    token = creds.get("accessToken") or ""
+    # Only use ANTHROPIC_API_KEY fallback for the default profile or when accountUuid exists.
+    profile = fetch_claude_profile(
+        token,
+        api_key if spec["is_default"] else "",
+        cache.get("accountUuid") or "",
+    )
+    if profile is not None:
+        active = claude_profile_is_active(profile)
+    else:
+        active = claude_cached_subscription_active(cache)
+    if not active:
+        return None, ("", "")
+
+    org = (profile.get("organization") or {}) if isinstance(profile, dict) else {}
+    acct = (profile.get("account") or {}) if isinstance(profile, dict) else {}
+    account_uuid = acct.get("uuid") or cache.get("accountUuid") or ""
+    org_uuid = org.get("uuid") or cache.get("organizationUuid") or ""
+    org_name = (org.get("name") or cache.get("organizationName") or spec["dir_label"] or "").strip()
+
+    usage = fetch_claude_usage(token) if token else None
+    rate_limits = parse_claude_rate_limits(usage)
+    local_stats = _read_claude_local_stats(spec["config_dir"], today_iso)
+
+    plan = f"Claude Code ({org_name})" if org_name else "Claude Code"
+    entry: dict[str, Any] = {
+        "id": spec["id"],
+        "label": org_name or spec["id"],
+        "organization_name": org_name,
+        "plan": plan,
+        "rate_limits": rate_limits,
+        "total_sessions": local_stats["total_sessions"],
+        "total_messages": local_stats["total_messages"],
+        "today": local_stats["today"],
+    }
+    dedup_key = (account_uuid, org_uuid) if (account_uuid and org_uuid) else ("profile", spec["id"])
+    return entry, dedup_key
+
+
+def collect_claude_usage() -> dict[str, Any]:
+    """Collect Claude Code quotas and local telemetry across active ~/.claude* profiles."""
+    real_home = get_real_home()
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    api_key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+
+    collected: list[dict[str, Any]] = []
+    seen_index: dict[tuple[str, str], int] = {}
+
+    for spec in discover_claude_profiles(real_home):
+        entry, dedup_key = _collect_single_claude_profile(spec, api_key, today_iso)
+        if entry is None:
+            continue
+        if dedup_key in seen_index:
+            existing = collected[seen_index[dedup_key]]
+            if not existing.get("rate_limits") and entry.get("rate_limits"):
+                existing["rate_limits"] = entry["rate_limits"]
+            if not existing.get("organization_name") and entry.get("organization_name"):
+                existing["organization_name"] = entry["organization_name"]
+                existing["label"] = entry["label"]
+                existing["plan"] = entry["plan"]
+            if (
+                existing.get("total_sessions", 0) == 0
+                and existing.get("total_messages", 0) == 0
+                and (entry.get("total_sessions", 0) > 0 or entry.get("total_messages", 0) > 0)
+            ):
+                existing["total_sessions"] = entry["total_sessions"]
+                existing["total_messages"] = entry["total_messages"]
+                existing["today"] = entry["today"]
+            continue
+        seen_index[dedup_key] = len(collected)
+        collected.append(entry)
+
+    if not collected:
+        return {
+            "status": "unavailable",
+            "error": "Claude subscription is not active",
+        }
+
+    primary = collected[0]
+    return {
+        "status": "ok",
+        "plan": primary["plan"],
+        "organization_name": primary["organization_name"],
+        "rate_limits": primary["rate_limits"],
+        "total_sessions": primary["total_sessions"],
+        "total_messages": primary["total_messages"],
+        "today": primary["today"],
+        "profiles": collected,
     }
 
 
@@ -1076,10 +1291,18 @@ def has_expired_reset_window(data: dict[str, Any]) -> bool:
                             return True
                     except Exception:
                         pass
-        # Check rate_limits (e.g. codex)
+        # Check rate_limits (e.g. codex, claude)
+        rate_limit_maps: list[dict[str, Any]] = []
         rl = p_data.get("rate_limits", {})
         if isinstance(rl, dict):
-            for r in rl.values():
+            rate_limit_maps.append(rl)
+        profiles = p_data.get("profiles", [])
+        if isinstance(profiles, list):
+            for prof in profiles:
+                if isinstance(prof, dict) and isinstance(prof.get("rate_limits"), dict):
+                    rate_limit_maps.append(prof["rate_limits"])
+        for rl_map in rate_limit_maps:
+            for r in rl_map.values():
                 if not isinstance(r, dict):
                     continue
                 rem = r.get("remaining_percent")
@@ -1208,11 +1431,27 @@ def generate_summary_line(data: dict[str, Any]) -> str:
     # Claude
     claude = providers.get("claude", {})
     if claude.get("status") == "ok":
-        today_msgs = (
-            claude.get("today", {}).get("message_count", 0)
-        )
-        if today_msgs > 0:
-            parts.append(f"Cld: {today_msgs}msg")
+        claude_profiles = claude.get("profiles")
+        if not isinstance(claude_profiles, list) or not claude_profiles:
+            claude_profiles = [claude]
+        claude_parts = []
+        for prof in claude_profiles:
+            if not isinstance(prof, dict):
+                continue
+            rl = prof.get("rate_limits") or {}
+            five_h = rl.get("five_hour", {}).get("remaining_percent")
+            if five_h is not None:
+                org_label = (prof.get("organization_name") or "").strip()
+                if len(claude_profiles) > 1 and org_label:
+                    claude_parts.append(f"{org_label}:{five_h}%")
+                else:
+                    claude_parts.append(f"{five_h}%")
+        if claude_parts:
+            parts.append(f"Cld: {'/'.join(claude_parts)}")
+        else:
+            today_msgs = claude.get("today", {}).get("message_count", 0)
+            if today_msgs > 0:
+                parts.append(f"Cld: {today_msgs}msg")
 
     # Copilot
     cpl = providers.get("copilot", {})
@@ -1444,34 +1683,48 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         `;
       }
 
-      // Claude Card
+      // Claude Card(s)
       if (p.claude && p.claude.status === 'ok') {
-        const cld = p.claude;
-        html += `
-          <div class="bg-darkcard border border-darkborder rounded-2xl p-6 shadow-xl space-y-5">
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="text-xs uppercase tracking-wider text-amber-400 font-bold">Anthropic</span>
-                <h2 class="text-xl font-bold mt-0.5 text-slate-100">Claude Code</h2>
+        const claudeProfiles = Array.isArray(p.claude.profiles) && p.claude.profiles.length > 0
+          ? p.claude.profiles
+          : [p.claude];
+        for (const cld of claudeProfiles) {
+          const rl = cld.rate_limits || {};
+          const hasRates = Object.keys(rl).length > 0;
+          const title = cld.plan || (cld.organization_name ? `Claude Code (${cld.organization_name})` : 'Claude Code');
+          const badge = hasRates ? 'Multi-Window' : 'Local Tracker';
+          html += `
+            <div class="bg-darkcard border border-darkborder rounded-2xl p-6 shadow-xl space-y-5">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="text-xs uppercase tracking-wider text-amber-400 font-bold">Anthropic</span>
+                  <h2 class="text-xl font-bold mt-0.5 text-slate-100">${title}</h2>
+                </div>
+                <span class="text-xs px-2.5 py-1 bg-amber-950/60 border border-amber-800/60 text-amber-300 rounded-md font-mono">${badge}</span>
               </div>
-              <span class="text-xs px-2.5 py-1 bg-amber-950/60 border border-amber-800/60 text-amber-300 rounded-md font-mono">Local Tracker</span>
+              ${hasRates ? `
+                <div class="space-y-4">
+                  ${rl.five_hour ? renderProgressBar('Claude Rolling Burst (5h)', rl.five_hour.remaining_percent, rl.five_hour.used_percent, 'Refreshes in ' + (rl.five_hour.reset_countdown || ''), 'amber') : ''}
+                  ${rl.weekly ? renderProgressBar('Claude Tier Allowance (Weekly)', rl.weekly.remaining_percent, rl.weekly.used_percent, 'Refreshes in ' + (rl.weekly.reset_countdown || ''), 'indigo') : ''}
+                </div>` : ''}
+              ${(cld.total_sessions || cld.total_messages) ? `
+                <div class="space-y-3 text-sm text-slate-300 font-mono">
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span>Lifetime Sessions</span>
+                    <span class="text-slate-100 font-semibold">${cld.total_sessions || 0}</span>
+                  </div>
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span>Total Messages Recorded</span>
+                    <span class="text-slate-100">${(cld.total_messages || 0).toLocaleString()}</span>
+                  </div>
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span>Today's Messages</span>
+                    <span class="text-slate-100">${cld.today?.message_count || 0}</span>
+                  </div>
+                </div>` : ''}
             </div>
-            <div class="space-y-3 text-sm text-slate-300 font-mono">
-              <div class="flex justify-between py-1 border-b border-slate-800">
-                <span>Lifetime Sessions</span>
-                <span class="text-slate-100 font-semibold">${cld.total_sessions}</span>
-              </div>
-              <div class="flex justify-between py-1 border-b border-slate-800">
-                <span>Total Messages Recorded</span>
-                <span class="text-slate-100">${(cld.total_messages || 0).toLocaleString()}</span>
-              </div>
-              <div class="flex justify-between py-1 border-b border-slate-800">
-                <span>Today's Messages</span>
-                <span class="text-slate-100">${cld.today?.message_count || 0}</span>
-              </div>
-            </div>
-          </div>
-        `;
+          `;
+        }
       }
 
       grid.innerHTML = html;
@@ -1587,9 +1840,19 @@ def main():
                 print(f"  • Auth Mode: {p.get('auth_mode')}")
                 print(f"  • Tracked Threads: {p.get('total_threads')}")
             elif name == "claude":
-                print(f"  • Total Sessions: {p.get('total_sessions')}")
-                if "today" in p:
-                    print(f"  • Today's Messages: {p['today'].get('message_count')}")
+                claude_profiles = p.get("profiles") or [p]
+                for prof in claude_profiles:
+                    if len(claude_profiles) > 1:
+                        print(f"  [{prof.get('plan', 'Claude Code')}]")
+                    for rk in ("weekly", "five_hour"):
+                        r = (prof.get("rate_limits") or {}).get(rk)
+                        if isinstance(r, dict):
+                            cd = f" (resets in {r['reset_countdown']})" if r.get("reset_countdown") else ""
+                            print(f"  • {r['label']}: {r['remaining_percent']}% remaining{cd}")
+                    if prof.get("total_sessions") or prof.get("total_messages"):
+                        print(f"  • Total Sessions: {prof.get('total_sessions', 0)}")
+                        if "today" in prof:
+                            print(f"  • Today's Messages: {prof['today'].get('message_count', 0)}")
             elif name == "copilot" and "buckets" in p:
                 for bk, b in p["buckets"].items():
                     cd = f" (resets in {b['reset_countdown']})" if b.get("reset_countdown") else ""

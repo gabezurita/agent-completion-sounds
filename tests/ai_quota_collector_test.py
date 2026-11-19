@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -445,9 +446,176 @@ class TestAiQuotaCollector(unittest.TestCase):
             ), patch("urllib.request.urlopen", return_value=_json_response(profile)) as opened:
                 res = ai_quota_collector.collect_claude_usage()
         self.assertEqual(res["status"], "ok")
-        request = opened.call_args.args[0]
-        self.assertIn("/api/oauth/profile", request.full_url)
+        urls = [call.args[0].full_url for call in opened.call_args_list]
+        self.assertTrue(any("/api/oauth/profile" in url for url in urls))
         self.assertNotIn("sk-test-claude", json.dumps(res))
+
+    def test_claude_multi_profile_discovery_and_live_usage(self):
+        future_reset = (
+            datetime.now(timezone.utc) + timedelta(hours=3)
+        ).isoformat()
+        weekly_reset = (
+            datetime.now(timezone.utc) + timedelta(days=4)
+        ).isoformat()
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(tmp, subscribed=True, fetched_at_ms=0, stats=True)
+            earth_dir = os.path.join(tmp, ".claude-earthacre")
+            os.makedirs(earth_dir, exist_ok=True)
+            with open(os.path.join(earth_dir, ".claude.json"), "w", encoding="utf-8") as handle:
+                json.dump(
+                    {
+                        "oauthAccount": {
+                            "accountUuid": "acct-earth",
+                            "organizationUuid": "org-earth",
+                            "organizationName": "Earthacre",
+                        }
+                    },
+                    handle,
+                )
+            earth_svc = ai_quota_collector.claude_keychain_service(earth_dir, is_default=False)
+            self.assertTrue(earth_svc.startswith("Claude Code-credentials-"))
+
+            def fake_run(cmd, **_kwargs):
+                if cmd and cmd[0] == "security":
+                    svc = cmd[cmd.index("-s") + 1]
+                    if svc == ai_quota_collector.CLAUDE_KEYCHAIN_SERVICE:
+                        payload = {"claudeAiOauth": {"accessToken": "tok-personal", "expiresAt": int(time.time() * 1000) + 3_600_000}}
+                        return subprocess.CompletedProcess(cmd, 0, json.dumps(payload), "")
+                    if svc == earth_svc:
+                        payload = {"claudeAiOauth": {"accessToken": "tok-earth", "expiresAt": int(time.time() * 1000) + 3_600_000}}
+                        return subprocess.CompletedProcess(cmd, 0, json.dumps(payload), "")
+                return subprocess.CompletedProcess(cmd, 1, "", "")
+
+            def fake_urlopen(req, timeout=8):
+                auth = req.headers.get("Authorization", "")
+                if "/api/oauth/profile" in req.full_url:
+                    if "tok-personal" in auth:
+                        return _json_response({
+                            "account": {"uuid": "acct-1"},
+                            "organization": {"uuid": "org-1", "name": "Personal", "rate_limit_tier": "default_claude_max"},
+                        })
+                    return _json_response({
+                        "account": {"uuid": "acct-earth"},
+                        "organization": {"uuid": "org-earth", "name": "Earthacre", "rate_limit_tier": "default_raven"},
+                    })
+                if "/api/oauth/usage" in req.full_url:
+                    if "tok-personal" in auth:
+                        return _json_response({
+                            "five_hour": {"utilization": 20.0, "resets_at": future_reset},
+                            "seven_day": {"utilization": 10.0, "resets_at": weekly_reset},
+                        })
+                    return _json_response({
+                        "five_hour": {"utilization": 5.0, "resets_at": future_reset},
+                        "seven_day": {"utilization": 42.0, "resets_at": weekly_reset},
+                    })
+                raise URLError("unexpected")
+
+            with patch.object(ai_quota_collector, "get_real_home", return_value=tmp), patch(
+                "subprocess.run", fake_run
+            ), patch("urllib.request.urlopen", fake_urlopen):
+                res = ai_quota_collector.collect_claude_usage()
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(len(res["profiles"]), 2)
+        by_id = {p["id"]: p for p in res["profiles"]}
+        self.assertEqual(by_id["default"]["plan"], "Claude Code (Personal)")
+        self.assertEqual(by_id["default"]["rate_limits"]["five_hour"]["remaining_percent"], 80)
+        self.assertEqual(by_id["default"]["rate_limits"]["weekly"]["remaining_percent"], 90)
+        self.assertEqual(by_id["earthacre"]["plan"], "Claude Code (Earthacre)")
+        self.assertEqual(by_id["earthacre"]["rate_limits"]["five_hour"]["remaining_percent"], 95)
+        self.assertEqual(by_id["earthacre"]["rate_limits"]["weekly"]["remaining_percent"], 58)
+        dumped = json.dumps(res)
+        self.assertNotIn("tok-personal", dumped)
+        self.assertNotIn("tok-earth", dumped)
+
+        summary = ai_quota_collector.generate_summary_line({"providers": {"claude": res}})
+        self.assertIn("Cld: Personal:80%/Earthacre:95%", summary)
+
+    def test_claude_multi_profile_deduplicates_same_account_and_keeps_stats(self):
+        future_reset = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(tmp, subscribed=True, fetched_at_ms=0, stats=True)
+            earth_dir = os.path.join(tmp, ".claude-earthacre")
+            os.makedirs(earth_dir, exist_ok=True)
+            with open(os.path.join(earth_dir, ".claude.json"), "w", encoding="utf-8") as handle:
+                json.dump(
+                    {"oauthAccount": {"accountUuid": "acct-same", "organizationUuid": "org-same", "organizationName": "Earthacre"}},
+                    handle,
+                )
+            earth_svc = ai_quota_collector.claude_keychain_service(earth_dir, is_default=False)
+
+            def fake_run(cmd, **_kwargs):
+                if cmd and cmd[0] == "security":
+                    svc = cmd[cmd.index("-s") + 1]
+                    if svc in (ai_quota_collector.CLAUDE_KEYCHAIN_SERVICE, earth_svc):
+                        payload = {"claudeAiOauth": {"accessToken": "tok-shared", "expiresAt": int(time.time() * 1000) + 3_600_000}}
+                        return subprocess.CompletedProcess(cmd, 0, json.dumps(payload), "")
+                return subprocess.CompletedProcess(cmd, 1, "", "")
+
+            def fake_urlopen(req, timeout=8):
+                if "/api/oauth/profile" in req.full_url:
+                    return _json_response({
+                        "account": {"uuid": "acct-same"},
+                        "organization": {"uuid": "org-same", "name": "Earthacre", "rate_limit_tier": "default_raven"},
+                    })
+                return _json_response({
+                    "five_hour": {"utilization": 5.0, "resets_at": future_reset},
+                    "seven_day": {"utilization": 42.0, "resets_at": future_reset},
+                })
+
+            with patch.object(ai_quota_collector, "get_real_home", return_value=tmp), patch(
+                "subprocess.run", fake_run
+            ), patch("urllib.request.urlopen", fake_urlopen):
+                res = ai_quota_collector.collect_claude_usage()
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(len(res["profiles"]), 1)
+        self.assertEqual(res["plan"], "Claude Code (Earthacre)")
+        self.assertEqual(res["total_sessions"], 4)
+        self.assertEqual(res["total_messages"], 9)
+        self.assertEqual(res["rate_limits"]["five_hour"]["remaining_percent"], 95)
+
+    def test_claude_custom_profile_active_when_default_inactive(self):
+        past_reset = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_claude_home(tmp, subscribed=False, fetched_at_ms=0, stats=False)
+            earth_dir = os.path.join(tmp, ".claude-earthacre")
+            os.makedirs(earth_dir, exist_ok=True)
+            with open(os.path.join(earth_dir, ".claude.json"), "w", encoding="utf-8") as handle:
+                json.dump(
+                    {"oauthAccount": {"accountUuid": "acct-earth", "organizationUuid": "org-earth", "organizationName": "Earthacre"}},
+                    handle,
+                )
+            earth_svc = ai_quota_collector.claude_keychain_service(earth_dir, is_default=False)
+
+            def fake_run(cmd, **_kwargs):
+                if cmd and cmd[0] == "security":
+                    svc = cmd[cmd.index("-s") + 1]
+                    if svc == earth_svc:
+                        payload = {"claudeAiOauth": {"accessToken": "tok-earth", "expiresAt": int(time.time() * 1000) + 3_600_000}}
+                        return subprocess.CompletedProcess(cmd, 0, json.dumps(payload), "")
+                return subprocess.CompletedProcess(cmd, 1, "", "")
+
+            def fake_urlopen(req, timeout=8):
+                if "/api/oauth/profile" in req.full_url:
+                    return _json_response({
+                        "account": {"uuid": "acct-earth"},
+                        "organization": {"uuid": "org-earth", "name": "Earthacre", "rate_limit_tier": "default_raven"},
+                    })
+                return _json_response({
+                    "five_hour": {"utilization": 15.0, "resets_at": past_reset},
+                    "seven_day": {"utilization": 30.0, "resets_at": past_reset},
+                })
+
+            with patch.object(ai_quota_collector, "get_real_home", return_value=tmp), patch(
+                "subprocess.run", fake_run
+            ), patch("urllib.request.urlopen", fake_urlopen):
+                res = ai_quota_collector.collect_claude_usage()
+
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(len(res["profiles"]), 1)
+        self.assertEqual(res["plan"], "Claude Code (Earthacre)")
+        self.assertTrue(ai_quota_collector.has_expired_reset_window({"providers": {"claude": res}}))
 
     def test_claude_fresh_cache_shows_when_refresh_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
