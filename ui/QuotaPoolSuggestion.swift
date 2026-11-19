@@ -94,6 +94,38 @@ enum QuotaPoolSuggestion {
             ))
         }
 
+        if let claude = providers["claude"] as? [String: Any],
+           claude["status"] as? String == "ok" {
+            let claudeProfiles: [[String: Any]]
+            if let list = claude["profiles"] as? [[String: Any]], !list.isEmpty {
+                claudeProfiles = list
+            } else {
+                claudeProfiles = [claude]
+            }
+            for (index, prof) in claudeProfiles.enumerated() {
+                guard let limits = prof["rate_limits"] as? [String: Any],
+                      let weekly = window(from: limits["weekly"]) else {
+                    continue
+                }
+                let rawId = (prof["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let poolId: String
+                if rawId.isEmpty || rawId == "default" {
+                    poolId = index == 0 ? "claude" : "claude-\(index)"
+                } else {
+                    poolId = "claude-\(rawId)"
+                }
+                let rawPlan = (prof["plan"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let poolName = rawPlan.isEmpty ? "Claude Code" : rawPlan
+                pools.append(Candidate(
+                    id: poolId,
+                    name: poolName,
+                    weekly: weekly,
+                    fiveHour: window(from: limits["five_hour"]),
+                    primaryLabel: "week"
+                ))
+            }
+        }
+
         if let cursor = measuredCursor(providers["cursor"]) {
             pools.append(cursor)
         }

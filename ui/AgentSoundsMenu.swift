@@ -1170,41 +1170,75 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(NSMenuItem.separator())
         }
 
-        // Claude Code Section
+        // Claude Code Section(s)
         if let claude = providers["claude"] as? [String: Any], claude["status"] as? String == "ok" {
-            let claudeHeaderAttr = NSAttributedString(
-                string: "Claude Code (Local Telemetry)",
-                attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
-            )
-            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: claudeHeaderAttr, height: 20, leftPadding: 14))
-
-            let sessions = claude["total_sessions"] as? Int ?? 0
-            let messages = claude["total_messages"] as? Int ?? 0
-            let numFormatter = NumberFormatter()
-            numFormatter.numberStyle = .decimal
-            let msgStr = numFormatter.string(from: NSNumber(value: messages)) ?? "\(messages)"
-
-            let sessAttr = NSAttributedString(
-                string: "    Lifetime Sessions: \(sessions) sessions",
-                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-            )
-            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: sessAttr, height: 18, leftPadding: 14))
-
-            let msgAttr = NSAttributedString(
-                string: "    Total Messages Recorded: \(msgStr)",
-                attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-            )
-            menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: msgAttr, height: 18, leftPadding: 14))
-
-            if let today = claude["today"] as? [String: Any], let todayCount = today["message_count"] as? Int, todayCount > 0 {
-                let todayAttr = NSAttributedString(
-                    string: "    Today's Messages: \(todayCount)",
-                    attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
-                )
-                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: todayAttr, height: 18, leftPadding: 14))
+            let claudeProfiles: [[String: Any]]
+            if let list = claude["profiles"] as? [[String: Any]], !list.isEmpty {
+                claudeProfiles = list
+            } else {
+                claudeProfiles = [claude]
             }
 
-            menu.addItem(NSMenuItem.separator())
+            let numFormatter = NumberFormatter()
+            numFormatter.numberStyle = .decimal
+
+            for prof in claudeProfiles {
+                let rl = prof["rate_limits"] as? [String: Any] ?? [:]
+                let hasRates = rl["weekly"] != nil || rl["five_hour"] != nil
+                let rawPlan = (prof["plan"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let headerTitle: String
+                if !rawPlan.isEmpty && rawPlan != "Claude Code" {
+                    headerTitle = rawPlan
+                } else {
+                    headerTitle = hasRates ? "Claude Code" : "Claude Code (Local Telemetry)"
+                }
+
+                let claudeHeaderAttr = NSAttributedString(
+                    string: headerTitle,
+                    attributes: [.font: NSFont.boldSystemFont(ofSize: 11), .foregroundColor: NSColor.labelColor]
+                )
+                menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: claudeHeaderAttr, height: 20, leftPadding: 14))
+
+                for rkey in ["weekly", "five_hour"] {
+                    guard let r = rl[rkey] as? [String: Any] else { continue }
+                    let rem = r["remaining_percent"] as? Int ?? 0
+                    let dot = QuotaManager.statusDot(remainingPct: rem)
+                    let defaultLabel = (rkey == "weekly") ? "Claude Weekly" : "Claude 5-Hour"
+                    let rawLabel = r["label"] as? String ?? defaultLabel
+                    let cleanLabel = QuotaManager.cleanBucketLabel(rawLabel)
+                    let cd = r["reset_countdown"] as? String
+                    let rowAttr = QuotaManager.formatTableRow(dot: dot, name: cleanLabel, remainingPct: rem, resetCountdown: cd)
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: rowAttr, height: 20, leftPadding: 14))
+                }
+
+                let sessions = prof["total_sessions"] as? Int ?? 0
+                let messages = prof["total_messages"] as? Int ?? 0
+                if !hasRates || sessions > 0 || messages > 0 {
+                    let msgStr = numFormatter.string(from: NSNumber(value: messages)) ?? "\(messages)"
+
+                    let sessAttr = NSAttributedString(
+                        string: "    Lifetime Sessions: \(sessions) sessions",
+                        attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                    )
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: sessAttr, height: 18, leftPadding: 14))
+
+                    let msgAttr = NSAttributedString(
+                        string: "    Total Messages Recorded: \(msgStr)",
+                        attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                    )
+                    menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: msgAttr, height: 18, leftPadding: 14))
+
+                    if let today = prof["today"] as? [String: Any], let todayCount = today["message_count"] as? Int, todayCount > 0 {
+                        let todayAttr = NSAttributedString(
+                            string: "    Today's Messages: \(todayCount)",
+                            attributes: [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor]
+                        )
+                        menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: todayAttr, height: 18, leftPadding: 14))
+                    }
+                }
+
+                menu.addItem(NSMenuItem.separator())
+            }
         }
 
         // GitHub Copilot Section
