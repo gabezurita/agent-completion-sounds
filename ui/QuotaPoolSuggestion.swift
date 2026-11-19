@@ -256,3 +256,68 @@ enum QuotaPoolSuggestion {
         return nil
     }
 }
+
+// MARK: - Model Advisor Task Picks (Coding & Reasoning)
+
+struct ModelAdvisorPick: Equatable {
+    let category: String
+    let label: String
+    let modelId: String
+    let modelName: String
+    let tool: String
+    let effort: String
+    let quotaLabel: String
+}
+
+enum ModelAdvisorPicks {
+    private static let featuredOrder: [(key: String, label: String)] = [
+        ("coding", "Coding"),
+        ("reasoning", "Reasoning"),
+    ]
+
+    static func parse(jsonData: Data) -> [ModelAdvisorPick] {
+        guard let root = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any],
+              let tiers = root["tiers"] as? [[String: Any]] else {
+            return []
+        }
+
+        var byCategory: [String: [String: Any]] = [:]
+        for tier in tiers {
+            if let key = tier["task_category"] as? String,
+               let top = tier["top"] as? [String: Any] {
+                byCategory[key] = top
+            }
+        }
+
+        var picks: [ModelAdvisorPick] = []
+        for entry in featuredOrder {
+            guard let top = byCategory[entry.key],
+                  let modelId = top["id"] as? String, !modelId.isEmpty,
+                  let modelName = top["name"] as? String, !modelName.isEmpty,
+                  let tool = top["tool"] as? String, !tool.isEmpty else {
+                continue
+            }
+            let effort = (top["effort"] as? String) ?? "medium"
+            let quotaDict = top["quota"] as? [String: Any]
+            let quotaLabel = (quotaDict?["label"] as? String) ?? ""
+            picks.append(ModelAdvisorPick(
+                category: entry.key,
+                label: entry.label,
+                modelId: modelId,
+                modelName: modelName,
+                tool: tool,
+                effort: effort,
+                quotaLabel: quotaLabel
+            ))
+        }
+        return picks
+    }
+
+    static func menuLine(for pick: ModelAdvisorPick) -> String {
+        var line = "\(pick.label): \(pick.modelName) (\(pick.tool) · \(pick.effort))"
+        if !pick.quotaLabel.isEmpty && pick.quotaLabel != "n/a" {
+            line += " · \(pick.quotaLabel)"
+        }
+        return line
+    }
+}

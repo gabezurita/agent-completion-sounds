@@ -276,6 +276,42 @@ func testClaudeMultiProfileRanking() {
     )
 }
 
+private func testModelAdvisorPicksParsing() {
+    let sampleJSON = """
+    {
+      "mode": "overview",
+      "tiers": [
+        {
+          "task_category": "quick",
+          "top": {"id": "cursor-grok-4.5", "name": "Cursor Grok 4.5", "tool": "cursor", "effort": "low", "quota": {"label": "100%"}}
+        },
+        {
+          "task_category": "coding",
+          "top": {"id": "claude-sonnet-5-5", "name": "Claude Sonnet 5.5", "tool": "agy", "effort": "medium", "quota": {"label": "100% (4h)"}}
+        },
+        {
+          "task_category": "reasoning",
+          "top": {"id": "gemini-4-argon", "name": "Gemini 4 Argon", "tool": "agy", "effort": "high", "quota": {"label": "98% (6d)"}}
+        }
+      ]
+    }
+    """.data(using: .utf8)!
+
+    let picks = ModelAdvisorPicks.parse(jsonData: sampleJSON)
+    expect(picks.count == 2, "expected 2 featured picks (coding + reasoning), got \(picks.count)")
+    expect(picks[0].category == "coding", "first pick should be coding")
+    expect(picks[0].modelId == "claude-sonnet-5-5", "coding modelId mismatch")
+    expect(picks[1].category == "reasoning", "second pick should be reasoning")
+    expect(picks[1].modelId == "gemini-4-argon", "reasoning modelId mismatch")
+
+    let codingLine = ModelAdvisorPicks.menuLine(for: picks[0])
+    expect(codingLine == "Coding: Claude Sonnet 5.5 (agy · medium) · 100% (4h)", "unexpected coding line: \(codingLine)")
+    let reasoningLine = ModelAdvisorPicks.menuLine(for: picks[1])
+    expect(reasoningLine == "Reasoning: Gemini 4 Argon (agy · high) · 98% (6d)", "unexpected reasoning line: \(reasoningLine)")
+
+    expect(ModelAdvisorPicks.parse(jsonData: Data("{}".utf8)).isEmpty, "empty json should yield no picks")
+}
+
 @main
 struct QuotaPoolSuggestionTest {
     static func main() {
@@ -284,6 +320,7 @@ struct QuotaPoolSuggestionTest {
         testZeroAndTies()
         testMeasuredCursor()
         testClaudeMultiProfileRanking()
+        testModelAdvisorPicksParsing()
         print("PASS: quota pool suggestion")
     }
 }
