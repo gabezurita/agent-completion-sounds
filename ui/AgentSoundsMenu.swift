@@ -278,6 +278,105 @@ class SoundManager {
     }
 }
 
+// MARK: - Model Advisor Manager
+
+class ModelAdvisorManager {
+    static let shared = ModelAdvisorManager()
+
+    let cachePath = "/tmp/model_advisor_overview_cache.json"
+    private var isFetching = false
+    private var lastFetchTime: Date?
+
+    private var advisorScriptPath: String? {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let candidates = [
+            "\(home)/.local/bin/models-advisor",
+            "\(home)/.agents/scripts/model_advisor.py",
+        ]
+        for path in candidates {
+            if FileManager.default.fileExists(atPath: path) {
+                return path
+            }
+        }
+        return nil
+    }
+
+    func loadCachedPicks() -> [ModelAdvisorPick] {
+        guard FileManager.default.fileExists(atPath: cachePath),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: cachePath)) else {
+            return []
+        }
+        return ModelAdvisorPicks.parse(jsonData: data)
+    }
+
+    func getPicks(completion: (([ModelAdvisorPick]) -> Void)? = nil) -> [ModelAdvisorPick] {
+        let cached = loadCachedPicks()
+        let shouldRefresh: Bool
+        if let last = lastFetchTime {
+            shouldRefresh = Date().timeIntervalSince(last) > 60
+        } else if let attrs = try? FileManager.default.attributesOfItem(atPath: cachePath),
+                  let modDate = attrs[.modificationDate] as? Date {
+            shouldRefresh = Date().timeIntervalSince(modDate) > 60
+        } else {
+            shouldRefresh = true
+        }
+
+        if shouldRefresh && !isFetching {
+            refreshInBackground(completion: completion)
+        }
+        return cached
+    }
+
+    func refreshInBackground(force: Bool = false, completion: (([ModelAdvisorPick]) -> Void)? = nil) {
+        guard !isFetching, let script = advisorScriptPath else { return }
+        isFetching = true
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            var args = ["python3", script, "--json"]
+            if force {
+                args.append("--refresh")
+            }
+            process.arguments = args
+            var env = ProcessInfo.processInfo.environment
+            let existingPath = env["PATH"] ?? "/usr/bin:/bin"
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:\(home)/.local/bin:\(existingPath)"
+            process.environment = env
+
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = FileHandle.nullDevice
+
+            var freshData: Data?
+            if (try? process.run()) != nil {
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                process.waitUntilExit()
+                if process.terminationStatus == 0 && !data.isEmpty {
+                    freshData = data
+                }
+            }
+
+            if let data = freshData {
+                let tmpURL = URL(fileURLWithPath: "\(self.cachePath).tmp")
+                let destURL = URL(fileURLWithPath: self.cachePath)
+                if (try? data.write(to: tmpURL, options: .atomic)) != nil {
+                    _ = try? FileManager.default.replaceItemAt(destURL, withItemAt: tmpURL)
+                }
+            }
+
+            let picks = self.loadCachedPicks()
+            DispatchQueue.main.async {
+                self.isFetching = false
+                self.lastFetchTime = Date()
+                completion?(picks)
+            }
+        }
+    }
+}
+
 // MARK: - Quota Management & Metrics
 
 class QuotaManager {
@@ -1039,6 +1138,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(AppDelegate.makeInformationalMenuItem(attributed: suggestionAttr, height: 20, leftPadding: 14))
         }
 
+        let advisorPicks = ModelAdvisorManager.shared.getPicks { [weak self] _ in
+            self?.rebuildMenu()
+        }
+        for pick in advisorPicks {
+            let pickItem = NSMenuItem(
+                title: ModelAdvisorPicks.menuLine(for: pick),
+                action: #selector(copyAdvisorModelAction(_:)),
+                keyEquivalent: ""
+            )
+            pickItem.target = self
+            pickItem.representedObject = pick.modelId
+            pickItem.toolTip = "Click to copy model ID: \(pick.modelId)"
+            let pickAttr = NSAttributedString(
+                string: ModelAdvisorPicks.menuLine(for: pick),
+                attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]
+            )
+            pickItem.attributedTitle = pickAttr
+            menu.addItem(pickItem)
+        }
+
         let colHeaderStr = "      " + "QUOTA BUCKET".padding(toLength: 20, withPad: " ", startingAt: 0) + " " + "LEFT".padding(toLength: 4, withPad: " ", startingAt: 0) + "   " + "PROGRESS".padding(toLength: 12, withPad: " ", startingAt: 0) + "  " + "RESETS IN"
         let colHeaderAttr = NSAttributedString(
             string: colHeaderStr,
@@ -1378,9 +1497,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    @objc func copyAdvisorModelAction(_ sender: NSMenuItem) {
+        guard let modelId = sender.representedObject as? String, !modelId.isEmpty else { return }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(modelId, forType: .string)
+    }
+
     @objc func refreshQuotasAction() {
         QuotaManager.shared.refreshInBackground(force: true) { [weak self] _ in
             self?.updateStatusIcon()
+            self?.rebuildMenu()
+        }
+        ModelAdvisorManager.shared.refreshInBackground(force: true) { [weak self] _ in
             self?.rebuildMenu()
         }
     }
