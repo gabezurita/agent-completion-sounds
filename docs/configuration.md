@@ -9,6 +9,8 @@
 - `AGENT_SOUND_COOLDOWN_SECS` is the cooldown in seconds. The default is 15. `0` disables both skips described under [When a sound plays](#when-a-sound-plays).
 - `AGENT_SOUND_ACTIVE_WINDOW_SECS` is how long a conversation counts as live when the player avoids a pack already in use. The default is 7200 seconds.
 - `AGENT_SOUND_UNIT` forces one pack for the current process and does not write `.mode`.
+- `AGENT_SOUND_SOCKET` overrides the Unix domain socket path for persistent macOS playback (default `/tmp/agent-sound-player-<uid>.sock`). Set to `off` (or `AGENT_SOUND_DISABLE_SOCKET=1`) to force subprocess playback.
+- `AGENT_SOUND_LOG_FILE` sets the diagnostic log path (default `/tmp/agent-sound.log`). `AGENT_SOUND_LOG_MAX_BYTES` caps log growth (default `262144` bytes, retaining `AGENT_SOUND_LOG_KEEP_LINES`, default `500`). Set `AGENT_SOUND_DEBUG=1` to include verbose entry and intermediate-tool suppression lines.
 
 ## When a sound plays
 
@@ -27,7 +29,7 @@ A call with no session id (`conversationId`, `conversation_id`, `session_id`, or
 
 ## Playback
 
-When `python3` is on `PATH`, an `.ogg` clip uses `ffplay` if `ffplay` is on `PATH`. Any other clip, including `.ogg` without `ffplay`, tries `afplay -v`, then `paplay`, then `aplay`. Without `python3`, `setsid` on `PATH` selects `paplay`, then `aplay`. When `setsid` is absent, the player tries `afplay -v`, then `paplay`, then `aplay`.
+When `python3` is on `PATH`, an `.ogg` clip uses `ffplay` if `ffplay` is on `PATH`. On macOS, non-`.ogg` clips first try the persistent `AgentDashboard.app` Unix socket (`/tmp/agent-sound-player-<uid>.sock`) so audio plays in-process via `AVAudioPlayer` without spawning a new `afplay` process per turn. When the socket is unavailable, disabled, or returns an error, playback falls back to `afplay -v`, then `paplay`, then `aplay`. Without `python3`, `setsid` on `PATH` selects `paplay`, then `aplay`. When `setsid` is absent, the player tries `afplay -v`, then `paplay`, then `aplay`.
 
 If the chosen folders contain no supported audio and `/System/Library/Sounds/Glass.aiff` exists, that file plays. If it does not exist, the call stays silent.
 

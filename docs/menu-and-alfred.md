@@ -10,7 +10,7 @@ The icon is a drawn talking bot, image only, with no SF Symbol. The default styl
 
 The menu can switch among `session`, `session-all`, `favorites`, and `all`. Favorites lists Select All as Favorites, Clear All Favorites, and one item per pack. It can import a folder or audio files. Reset Active Sessions clears the sticky cache.
 
-Play Test Sound (`Cmd+T`) sets `AGENT_COMPLETION_SOUND_PREVIEW=1`, `AGENT_COMPLETION_SOUND_DISABLE=0`, and cooldown `0`, then plays a stop for conversation id `test-ui-ping`. The preview plays while `.disabled` exists, can stick `test-ui-ping`, and leaves `.disabled` in place, so later agent turns stay silent. If the player script is missing, the menu falls back to `afplay` on a random clip and does not set those variables.
+Play Test Sound (`Cmd+T`) sets `AGENT_COMPLETION_SOUND_PREVIEW=1`, `AGENT_COMPLETION_SOUND_DISABLE=0`, and cooldown `0`, then plays a stop for conversation id `test-ui-ping`. The preview plays while `.disabled` exists, can stick `test-ui-ping`, and leaves `.disabled` in place, so later agent turns stay silent. While running, `AgentDashboard.app` also listens on `/tmp/agent-sound-player-<uid>.sock` (`0600`) and plays clips in-process with `AVAudioPlayer`, avoiding per-turn `afplay` process churn. If the player script is missing, the menu falls back to that same in-process player on a random clip and does not set those variables.
 
 Open in Finder (`Cmd+O`) opens `~/sounds` when that directory exists. Otherwise it opens `AGENT_SOUNDS_ROOT`.
 

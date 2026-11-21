@@ -14,3 +14,11 @@ scripts/completion-sound-sets.txt
 
 # Temporary doc outputs / workspace temp files
 docs/temp/
+
+# Standard repository baseline
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+scratch/
