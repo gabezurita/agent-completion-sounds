@@ -212,10 +212,7 @@ class SoundManager {
             }
             if let clip = candidates.randomElement() {
                 lastPlayedClipURL = clip
-                let task = Process()
-                task.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
-                task.arguments = [clip.path]
-                try? task.run()
+                _ = SoundPlaybackServer.shared.play(path: clip.path, volume: 0.45)
             }
         }
     }
@@ -638,6 +635,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        SoundPlaybackServer.shared.start()
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.imagePosition = .imageOnly
@@ -655,6 +654,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.updateStatusIcon()
             }
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        SoundPlaybackServer.shared.stop()
     }
 
     var menuBarQuotaStyle: String {

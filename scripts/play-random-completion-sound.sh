@@ -30,15 +30,59 @@ if [[ ! "${COOLDOWN_SECS}" =~ ^[0-9]+$ ]]; then
 fi
 DISABLE_FILE="${SOUNDS_ROOT}/.disabled"
 LOG_FILE="${AGENT_SOUND_LOG_FILE:-/tmp/agent-sound.log}"
+LOG_MAX_BYTES="${AGENT_SOUND_LOG_MAX_BYTES:-262144}"
+if [[ ! "${LOG_MAX_BYTES}" =~ ^[0-9]+$ ]]; then
+  LOG_MAX_BYTES=262144
+fi
+LOG_KEEP_LINES="${AGENT_SOUND_LOG_KEEP_LINES:-500}"
+if [[ ! "${LOG_KEEP_LINES}" =~ ^[0-9]+$ || "${LOG_KEEP_LINES}" -eq 0 ]]; then
+  LOG_KEEP_LINES=500
+fi
+DEBUG_LOGGING="${AGENT_SOUND_DEBUG:-0}"
+
+get_file_size() {
+  local target="$1"
+  local sz
+  if sz=$(stat -c %s "${target}" 2>/dev/null) && [[ "${sz}" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "${sz}"
+    return 0
+  fi
+  if sz=$(stat -f %z "${target}" 2>/dev/null) && [[ "${sz}" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "${sz}"
+    return 0
+  fi
+  echo 0
+}
+
+trim_log_if_needed() {
+  ((LOG_MAX_BYTES > 0)) || return 0
+  [[ -f "${LOG_FILE}" ]] || return 0
+  local sz
+  sz=$(get_file_size "${LOG_FILE}")
+  if ((sz > LOG_MAX_BYTES)); then
+    local tmp_log="${LOG_FILE}.trim.$$"
+    if tail -n "${LOG_KEEP_LINES}" "${LOG_FILE}" > "${tmp_log}" 2>/dev/null; then
+      mv -f "${tmp_log}" "${LOG_FILE}" 2>/dev/null || rm -f "${tmp_log}" 2>/dev/null || true
+    else
+      rm -f "${tmp_log}" 2>/dev/null || true
+    fi
+  fi
+}
 
 log_msg() {
   local ts
   ts=$(date '+%Y-%m-%d %H:%M:%S')
   mkdir -p "$(dirname "${LOG_FILE}")" 2>/dev/null || true
+  trim_log_if_needed
   printf '[%s] [%s:%s] [player] %s\n' "${ts}" "$$" "${PPID:-0}" "$*" >> "${LOG_FILE}" 2>/dev/null || true
 }
 
-log_msg "entered: args='$*' payload_len=${#payload}"
+debug_log_msg() {
+  [[ "${DEBUG_LOGGING}" == "1" ]] || return 0
+  log_msg "$@"
+}
+
+debug_log_msg "entered: args='$*' payload_len=${#payload}"
 
 if [[ "${AGENT_COMPLETION_SOUND_PREVIEW:-}" != "1" && ( -f "${DISABLE_FILE}" || "${AGENT_COMPLETION_SOUND_DISABLE:-}" == "1" ) ]]; then
   log_msg "suppressed: disabled (sentinel file '${DISABLE_FILE}' exists or AGENT_COMPLETION_SOUND_DISABLE=1)"
@@ -83,7 +127,7 @@ fi
 
 # In multi-step agent runs (e.g. Antigravity PreInvocation), suppress intermediate tool steps
 if [[ -n "${invocation_num}" && "${invocation_num}" -gt 1 ]]; then
-  log_msg "suppressed: intermediate tool invocation (${invocation_num}) for session '${session_id:-global}'"
+  debug_log_msg "suppressed: intermediate tool invocation (${invocation_num}) for session '${session_id:-global}'"
   printf '%s\n' '{}'
   exit 0
 fi
@@ -386,9 +430,9 @@ if [[ -n "${clip}" ]]; then
   fi
 
   if command -v python3 >/dev/null 2>&1; then
-    log_msg "launching python background player"
+    debug_log_msg "launching python background player"
     if ! python3 - "${clip}" "${VOLUME}" "${LOG_FILE}" <<'PY'
-import os, sys, shutil, subprocess, datetime
+import os, sys, shutil, subprocess, datetime, json, socket, stat
 
 clip = sys.argv[1]
 volume = sys.argv[2]
@@ -403,6 +447,55 @@ def log(msg):
             f.write(f"[{ts}] [{os.getpid()}] [player] {msg}\n")
     except Exception:
         pass
+
+def resolve_socket_path():
+    if os.environ.get("AGENT_SOUND_DISABLE_SOCKET", "") == "1":
+        return ""
+    explicit = os.environ.get("AGENT_SOUND_SOCKET")
+    if explicit is not None:
+        trimmed = explicit.strip()
+        if trimmed.lower() in ("", "0", "off", "none", "false"):
+            return ""
+        return trimmed
+    # Auto-route to the persistent AgentSoundsMenu socket on macOS only when
+    # using the real system afplay (preserves test isolation when PATH mocks afplay).
+    if sys.platform == "darwin" and shutil.which("afplay") == "/usr/bin/afplay":
+        return f"/tmp/agent-sound-player-{os.getuid()}.sock"
+    return ""
+
+def try_persistent_socket():
+    if clip.lower().endswith(".ogg"):
+        return False
+    sock_path = resolve_socket_path()
+    if not sock_path:
+        return False
+    try:
+        st = os.stat(sock_path)
+    except OSError:
+        return False
+    if not stat.S_ISSOCK(st.st_mode):
+        return False
+    try:
+        vol = float(volume)
+    except ValueError:
+        vol = 0.45
+    payload = (json.dumps({"clip": clip, "volume": vol}) + "\n").encode("utf-8")
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            s.connect(sock_path)
+            s.sendall(payload)
+            resp = s.recv(256).decode("utf-8", errors="replace").strip()
+        if resp.startswith("OK"):
+            log(f"playback via persistent socket ({sock_path}): ok")
+            return True
+        log(f"persistent socket error ({resp or 'empty'}), falling back to subprocess player")
+    except OSError as exc:
+        log(f"persistent socket unavailable ({exc}), falling back to subprocess player")
+    return False
+
+if try_persistent_socket():
+    sys.exit(0)
 
 player_cmd = []
 if clip.lower().endswith(".ogg") and shutil.which("ffplay"):
