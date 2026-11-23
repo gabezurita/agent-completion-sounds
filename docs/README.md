@@ -60,11 +60,13 @@ Dashed arrows are create-when conditions; the table below has Created when and S
 | Evaluation | What does the evidence tell us? | An assumption needs dated, testable or auditable evidence | Evidence collection concludes. Link new measurements from a later evaluation or an ADR; do not rewrite the closed report. |
 | ADR | What did we decide, and why? | The decision matters long-term | Accepted. Supersede rather than rewrite. Keep measurements in the evaluation. |
 | Tech spec | How will we build the chosen approach? | Builders need APIs, data model, or failure modes that would make the RFC or plan too long | Implementation completes, or a later spec supersedes it. |
-| Plan | How will we sequence the work? | The work is multi-session or cross-repo | Implementation completes. Mark completed or archived; use superseded only when another plan replaces it. Shipped behavior belongs in the owning repo. |
+| Plan | How will we sequence the work? | Before implementation | Implementation completes. Post in a GitHub issue or Jira comment (draft locally in gitignored `docs/temp/` if needed); do not commit to git. |
 | Solution | How did we solve this recurring bug or gotcha? | After the fix ships, and a future session would otherwise rediscover it. Tracked artifact of the [compound step](https://github.com/Invoca/monarch-team/blob/main/.agents/TEAM_RULES.md#compound-step); audit drafts with [`compound-route`](https://github.com/Invoca/monarch-team/tree/main/.agents/skills/compound-route). | The writeup is validated. |
 | Temp | What do I need only while working? | During active work | Delete when no longer useful. |
 
-Do not merge `techspecs/` into `plans/`.
+### Why there is no `docs/plans/` folder
+
+Implementation plans belong in **GitHub issue or Jira comments**, not in git. Step-by-step plans go stale as soon as the PR merges, bloat the repo, pollute code search, and mislead AI coding agents. If you need a local file while drafting, use `docs/temp/` (gitignored) and paste the final plan into the tracker comment. Anything that still matters after merge belongs in `docs/adr/` (why), `docs/techspecs/` (contract), or `docs/architecture/` (current state).
 
 ---
 
@@ -77,9 +79,8 @@ Do not merge `techspecs/` into `plans/`.
 | `docs/evaluations/` | System evaluations, spike reports, and benchmark tests. | Permanent (git-tracked) |
 | `docs/techspecs/` | Detailed implementation specifications and design contracts. | Permanent (git-tracked) |
 | `docs/adr/` | Architecture Decision Records (ADRs) recording technical choices. | Permanent (git-tracked) |
-| `docs/plans/` | Execution plans sequencing rollouts and roadmaps. | Permanent (git-tracked) |
 | `docs/solutions/` | Documented solutions to recurring bugs and tooling gotchas. | Permanent (git-tracked) |
-| `docs/temp/` | Temporary scratch notes, carry-forwards, and PR reviews. | Ephemeral (gitignored) |
+| `docs/temp/` | Temporary scratch notes, draft plans, carry-forwards, and PR reviews. | Ephemeral (gitignored) |
 
 ---
 
@@ -90,6 +91,6 @@ Do not merge `techspecs/` into `plans/`.
 - **Evaluations**: Use `evaluation-report-template.md` (or report/evidence templates) for spikes.
 - **Tech Specs**: Use `techspec-template.md` for detailed build specifications.
 - **ADRs**: Use `adr-template.md` for recording major, durable design choices.
-- **Plans**: Use `plan-template.md` to sequence multi-session or cross-repo work.
+- **Plans**: Post implementation plans in the GitHub issue or Jira ticket comment (draft in `docs/temp/` if needed); do not commit plans to git.
 - **Solutions**: Use `solution-template.md` with valid YAML frontmatter for recurring issues.
 - **Scratch**: Store ephemeral files in `docs/temp/` to prevent working tree pollution.
